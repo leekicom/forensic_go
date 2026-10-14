@@ -159,28 +159,72 @@ IPHONE_STEPS = COMMON_PRE_STEPS + [
         "caution": "잠금 해제를 시도하며 정보를 캐내려 하지 않는다. 화면에 보이는 정보만 기록한다.",
     },
     {
-        "title": "6. 잠금 관련 상태 메모",
+        "title": "6. 현장 이미지 추출 여부 결정",
+        "type": "decision",
+        "options": ["현장 즉시 이미지 추출", "압수 후 실험실 이송", "보류 (책임자 추가 판단 필요)"],
         "detail": (
-            "- 잠금화면 메시지, Face ID/Touch ID 사용 여부 등 화면에 보이는\n"
-            "  정보를 기록해 둔다(전문 추출팀 전달용 참고 정보)."
+            "현장에서 전문 추출팀이 바로 이미지를 뜰지, 기기를 압수해 실험실로\n"
+            "옮긴 뒤 처리할지를 아래 기준으로 판단해 선택한다.\n\n"
+            "판단 기준:\n"
+            "- 시간 민감성: 배터리 소진, 자동 재잠금, 원격 삭제 위험이 임박했는가\n"
+            "- 현장 장비: 공인 추출 장비(Cellebrite 등)와 전문 인력이 현장에 있는가\n"
+            "- 공간/환경: 전력, 차폐(페러데이백/차폐룸), 작업 테이블 등 여건이 되는가\n"
+            "- 법적 권한 범위: 영장/동의 범위가 현장 추출까지 포함하는가\n"
+            "- 증거 복잡성: 다수 기기·대용량 저장소 등으로 실험실 정밀 분석이\n"
+            "  필요한 상황인가"
         ),
-        "caution": "소지자의 동의나 법적 근거 없이 잠금 해제를 요구/시도하지 않는다.",
+        "caution": "결정 권한은 현장 책임자(또는 기관 SOP가 지정한 담당자)에게 있다. 애매하면 '보류'를 선택하고 책임자 지시를 받는다.",
+        "branch_info": {
+            "현장 즉시 이미지 추출": (
+                "→ 전문 추출팀이 현장에서 공인 장비로 작업할 수 있도록 전력, 공간,\n"
+                "   네트워크 차폐 환경을 지원한다. 추출 시작/종료 시각, 사용 장비명,\n"
+                "   담당자를 기록한다."
+            ),
+            "압수 후 실험실 이송": (
+                "→ 기기를 봉인하여 실험실로 이송한다. 이송 중에도 네트워크 격리와\n"
+                "   배터리 방전 방지가 유지되는지 확인하고, 이송 책임자와 시각을\n"
+                "   기록한다."
+            ),
+            "보류 (책임자 추가 판단 필요)": (
+                "→ 책임자 지시가 있을 때까지 현재 보존 상태(격리/충전)를 유지한다.\n"
+                "   판단이 내려지면 이 선택을 다시 바꾸고 사유를 메모에 남긴다."
+            ),
+        },
     },
     {
-        "title": "7. 전문 추출팀 인계",
+        "title": "7. 잠금해제/복호화 - 전문 추출팀 인계 체크리스트",
+        "detail": (
+            "실제 잠금해제·복호화 작업은 공인 장비(Cellebrite UFED, GrayKey 등)와\n"
+            "자격을 갖춘 전문 추출팀만 수행한다. 현장 담당자는 아래 정보를\n"
+            "빠짐없이 기록해 전문팀에 인계한다.\n\n"
+            "- 기기 모델명 / iOS 버전\n"
+            "- Face ID / Touch ID 사용 여부\n"
+            "- 마지막 잠금 해제로부터 경과 시간(가능한 범위에서 추정)\n"
+            "- 배터리 잔량(%)\n"
+            "- USB 제한 모드 활성 가능성(장시간 미사용 여부로 추정)\n"
+            "- 화면에 노출된 Apple ID / iCloud 계정 정보\n"
+            "- SIM 카드 장착 여부 및 통신사\n"
+            "- 페러데이백/증거백 봉인 상태"
+        ),
+        "caution": "현장 담당자는 잠금 해제 코드를 추측하거나, 소지자에게 암호 제공을 강요하지 않는다. 암호 제공 요구는 법적 근거(영장 범위, 소지자 동의 등)가 있는 경우에만 지정된 절차로 진행한다.",
+    },
+    {
+        "title": "8. 전문 추출팀 인계",
         "detail": (
             "- 법적 권한과 절차에 따라 공인 모바일 포렌식 장비를 보유한\n"
-            "  전문 인력에게 인계한다."
+            "  전문 인력에게 인계한다.\n"
+            "- 위 체크리스트와 6단계에서 선택한 처리 방식(현장 추출/실험실 이송)을\n"
+            "  함께 전달한다."
         ),
         "caution": "비전문 인력이 임의 소프트웨어로 추출을 시도하면 증거능력이 부정될 수 있다.",
     },
     {
-        "title": "8. 증거물 포장 및 봉인",
+        "title": "9. 증거물 포장 및 봉인",
         "detail": "- 페러데이백째로 정전기 방지 봉투에 추가 포장, 봉인 스티커 서명/날짜 기입 및 촬영.",
         "caution": "운반 중 충격, 고온, 자기장 노출 주의.",
     },
     {
-        "title": "9. 증거물 목록 및 인수인계 기록 작성",
+        "title": "10. 증거물 목록 및 인수인계 기록 작성",
         "detail": "- 압수물 목록과 Chain of Custody 문서를 작성한다.",
         "caution": "모든 접촉/이동 이력을 빠짐없이 기록한다.",
     },
@@ -222,17 +266,73 @@ ANDROID_STEPS = COMMON_PRE_STEPS + [
         "caution": "직접 설정을 변경하지 않는다. 변경이 필요하면 기록 후 전문팀과 협의.",
     },
     {
-        "title": "7. 전문 추출팀 인계",
-        "detail": "- 공인 모바일 포렌식 장비를 보유한 전문 인력에게 법적 절차에 따라 인계한다.",
+        "title": "7. 현장 이미지 추출 여부 결정",
+        "type": "decision",
+        "options": ["현장 즉시 이미지 추출", "압수 후 실험실 이송", "보류 (책임자 추가 판단 필요)"],
+        "detail": (
+            "현장에서 전문 추출팀이 바로 이미지를 뜰지, 기기를 압수해 실험실로\n"
+            "옮긴 뒤 처리할지를 아래 기준으로 판단해 선택한다.\n\n"
+            "판단 기준:\n"
+            "- 시간 민감성: 배터리 소진, 자동 재잠금, 원격 초기화 위험이 임박했는가\n"
+            "- 현장 장비: 공인 추출 장비(Cellebrite, XRY 등)와 전문 인력이 현장에 있는가\n"
+            "- 공간/환경: 전력, 차폐(페러데이백/차폐룸), 작업 테이블 등 여건이 되는가\n"
+            "- 법적 권한 범위: 영장/동의 범위가 현장 추출까지 포함하는가\n"
+            "- 증거 복잡성: 다수 기기·대용량 저장소 등으로 실험실 정밀 분석이\n"
+            "  필요한 상황인가"
+        ),
+        "caution": "결정 권한은 현장 책임자(또는 기관 SOP가 지정한 담당자)에게 있다. 애매하면 '보류'를 선택하고 책임자 지시를 받는다.",
+        "branch_info": {
+            "현장 즉시 이미지 추출": (
+                "→ 전문 추출팀이 현장에서 공인 장비로 작업할 수 있도록 전력, 공간,\n"
+                "   네트워크 차폐 환경을 지원한다. 추출 시작/종료 시각, 사용 장비명,\n"
+                "   담당자를 기록한다."
+            ),
+            "압수 후 실험실 이송": (
+                "→ 기기를 봉인하여 실험실로 이송한다. 이송 중에도 네트워크 격리와\n"
+                "   배터리 방전 방지가 유지되는지 확인하고, 이송 책임자와 시각을\n"
+                "   기록한다."
+            ),
+            "보류 (책임자 추가 판단 필요)": (
+                "→ 책임자 지시가 있을 때까지 현재 보존 상태(격리/충전)를 유지한다.\n"
+                "   판단이 내려지면 이 선택을 다시 바꾸고 사유를 메모에 남긴다."
+            ),
+        },
+    },
+    {
+        "title": "8. 잠금해제/복호화 - 전문 추출팀 인계 체크리스트",
+        "detail": (
+            "실제 잠금해제·복호화 작업은 공인 장비(Cellebrite, MSAB XRY 등)와\n"
+            "자격을 갖춘 전문 추출팀만 수행한다. 현장 담당자는 아래 정보를\n"
+            "빠짐없이 기록해 전문팀에 인계한다.\n\n"
+            "- 제조사/모델명 / Android 버전 / 보안 패치 수준\n"
+            "- 지문/얼굴 인식 등 생체인증 사용 여부\n"
+            "- 마지막 잠금 해제로부터 경과 시간(가능한 범위에서 추정)\n"
+            "- 배터리 잔량(%)\n"
+            "- USB 디버깅 활성화 여부(화면상 확인 가능한 경우)\n"
+            "- 루팅 여부(추정)\n"
+            "- 화면에 노출된 구글 계정 정보\n"
+            "- SIM 카드 장착 여부 및 통신사\n"
+            "- 페러데이백/증거백 봉인 상태"
+        ),
+        "caution": "현장 담당자는 잠금 해제 코드를 추측하거나, 소지자에게 암호 제공을 강요하지 않는다. 암호 제공 요구는 법적 근거(영장 범위, 소지자 동의 등)가 있는 경우에만 지정된 절차로 진행한다.",
+    },
+    {
+        "title": "9. 전문 추출팀 인계",
+        "detail": (
+            "- 공인 모바일 포렌식 장비를 보유한 전문 인력에게 법적 절차에 따라\n"
+            "  인계한다.\n"
+            "- 위 체크리스트와 7단계에서 선택한 처리 방식(현장 추출/실험실 이송)을\n"
+            "  함께 전달한다."
+        ),
         "caution": "비전문 인력의 임의 추출 시도는 증거능력을 저해할 수 있다.",
     },
     {
-        "title": "8. 증거물 포장 및 봉인",
+        "title": "10. 증거물 포장 및 봉인",
         "detail": "- 정전기 방지 봉투/페러데이백 포장 후 봉인 스티커 서명/날짜 기입.",
         "caution": "운반 중 충격, 고온 주의.",
     },
     {
-        "title": "9. 증거물 목록 및 인수인계 기록 작성",
+        "title": "11. 증거물 목록 및 인수인계 기록 작성",
         "detail": "- 압수물 목록과 Chain of Custody 문서를 작성한다.",
         "caution": "모든 접촉/이동 이력을 빠짐없이 기록한다.",
     },
@@ -289,7 +389,7 @@ def render_start():
         st.session_state.current_index = 0
         steps = DEVICE_STEPS[device_type]
         st.session_state.records = {
-            i: {"done": False, "note": "", "photos": []} for i in range(len(steps))
+            i: {"done": False, "note": "", "photos": [], "decision": None} for i in range(len(steps))
         }
         st.session_state.stage = "guide"
         st.rerun()
@@ -321,6 +421,11 @@ def build_report_text():
         lines.append(step["detail"])
         if step.get("caution"):
             lines.append(f"주의: {step['caution']}")
+        if step.get("type") == "decision" and rec.get("decision"):
+            lines.append(f"▶ 선택된 결정: {rec['decision']}")
+            branch_text = step.get("branch_info", {}).get(rec["decision"])
+            if branch_text:
+                lines.append(branch_text)
         if rec["note"]:
             lines.append(f"현장 메모: {rec['note']}")
         photos = rec.get("photos") or []
@@ -356,6 +461,22 @@ def render_guide():
     st.markdown(step["detail"].replace("\n", "  \n"))
     if step.get("caution"):
         st.warning(f"⚠ 주의: {step['caution']}")
+
+    if step.get("type") == "decision":
+        options = step["options"]
+        current = rec.get("decision")
+        default_index = options.index(current) if current in options else None
+        choice = st.radio(
+            "현장 결정",
+            options,
+            index=default_index,
+            key=f"decision_{idx}",
+        )
+        rec["decision"] = choice
+        if choice:
+            branch_text = step.get("branch_info", {}).get(choice)
+            if branch_text:
+                st.success(branch_text.replace("\n", "  \n"))
 
     rec["done"] = st.checkbox("이 단계를 완료했습니다", value=rec["done"], key=f"done_{idx}")
     rec["note"] = st.text_area("현장 메모", value=rec["note"], key=f"note_{idx}", height=100)
@@ -417,6 +538,7 @@ def render_guide():
                     "title": steps[i]["title"],
                     "done": st.session_state.records[i]["done"],
                     "note": st.session_state.records[i]["note"],
+                    "decision": st.session_state.records[i].get("decision"),
                     "photos": [p.name for p in (st.session_state.records[i].get("photos") or [])],
                 }
                 for i in range(len(steps))
