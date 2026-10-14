@@ -20,6 +20,8 @@
 import streamlit as st
 import datetime
 import json
+import io
+import zipfile
 
 APP_TITLE = "현장 압수 절차 안내 (Digital Forensics Seizure Guide)"
 
@@ -251,7 +253,7 @@ def init_state():
         "device_type": None,
         "current_index": 0,
         "case_info": {},
-        "records": {},             # {step_index: {"done": bool, "note": str}}
+        "records": {},             # {step_index: {"done": bool, "note": str, "photos": [UploadedFile,...]}}
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -286,7 +288,9 @@ def render_start():
         st.session_state.device_type = device_type
         st.session_state.current_index = 0
         steps = DEVICE_STEPS[device_type]
-        st.session_state.records = {i: {"done": False, "note": ""} for i in range(len(steps))}
+        st.session_state.records = {
+            i: {"done": False, "note": "", "photos": []} for i in range(len(steps))
+        }
         st.session_state.stage = "guide"
         st.rerun()
 
@@ -319,6 +323,10 @@ def build_report_text():
             lines.append(f"주의: {step['caution']}")
         if rec["note"]:
             lines.append(f"현장 메모: {rec['note']}")
+        photos = rec.get("photos") or []
+        if photos:
+            names = ", ".join(p.name for p in photos)
+            lines.append(f"첨부 사진 ({len(photos)}장): {names}")
     lines.append("\n" + "=" * 70)
     lines.append("서명란:")
     lines.append("담당자 서명: ______________________   일시: ______________________")
@@ -352,6 +360,24 @@ def render_guide():
     rec["done"] = st.checkbox("이 단계를 완료했습니다", value=rec["done"], key=f"done_{idx}")
     rec["note"] = st.text_area("현장 메모", value=rec["note"], key=f"note_{idx}", height=100)
 
+    st.markdown("**📷 현장 사진**")
+    uploaded_photos = st.file_uploader(
+        "사진 추가 (여러 장 선택 가능, 이미 올린 사진은 목록에서 x로 삭제 가능)",
+        type=["png", "jpg", "jpeg", "heic"],
+        accept_multiple_files=True,
+        key=f"photos_{idx}",
+    )
+    rec["photos"] = uploaded_photos or []
+
+    if rec["photos"]:
+        st.caption(f"이 단계에 첨부된 사진: {len(rec['photos'])}장")
+        thumb_cols = st.columns(3)
+        for p_idx, photo in enumerate(rec["photos"]):
+            with thumb_cols[p_idx % 3]:
+                st.image(photo, caption=photo.name, use_container_width=True)
+    else:
+        st.caption("아직 첨부된 사진이 없습니다.")
+
     col1, col2, col3 = st.columns(3)
     with col1:
         if st.button("◀ 이전 단계", disabled=(idx == 0)):
@@ -372,7 +398,9 @@ def render_guide():
     report_text = build_report_text()
     file_tag = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    dcol1, dcol2 = st.columns(2)
+    total_photos = sum(len(st.session_state.records[i].get("photos") or []) for i in range(len(steps)))
+
+    dcol1, dcol2, dcol3 = st.columns(3)
     with dcol1:
         st.download_button(
             "TXT 리포트 다운로드",
@@ -385,8 +413,12 @@ def render_guide():
             "case_info": st.session_state.case_info,
             "device_type": device_type,
             "steps": [
-                {"title": steps[i]["title"], "done": st.session_state.records[i]["done"],
-                 "note": st.session_state.records[i]["note"]}
+                {
+                    "title": steps[i]["title"],
+                    "done": st.session_state.records[i]["done"],
+                    "note": st.session_state.records[i]["note"],
+                    "photos": [p.name for p in (st.session_state.records[i].get("photos") or [])],
+                }
                 for i in range(len(steps))
             ],
         }
@@ -396,6 +428,24 @@ def render_guide():
             file_name=f"forensic_report_{device_type}_{file_tag}.json",
             mime="application/json",
         )
+    with dcol3:
+        if total_photos > 0:
+            zip_buffer = io.BytesIO()
+            with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+                for i in range(len(steps)):
+                    photos = st.session_state.records[i].get("photos") or []
+                    step_folder = f"{i:02d}_{steps[i]['title'][:20]}".replace("/", "-")
+                    for photo in photos:
+                        photo.seek(0)
+                        zf.writestr(f"{step_folder}/{photo.name}", photo.read())
+            st.download_button(
+                f"사진 전체 ZIP ({total_photos}장)",
+                data=zip_buffer.getvalue(),
+                file_name=f"forensic_photos_{device_type}_{file_tag}.zip",
+                mime="application/zip",
+            )
+        else:
+            st.caption("첨부된 사진이 없습니다.")
 
     with st.expander("전체 단계 한눈에 보기 / 바로 이동"):
         for i, s in enumerate(steps):
