@@ -19,9 +19,61 @@
 
 import streamlit as st
 import datetime
-import json
 import io
+import os
 import zipfile
+
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import mm
+from reportlab.lib import colors
+from reportlab.platypus import (
+    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
+    Image as RLImage, PageBreak, HRFlowable,
+)
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from PIL import Image as PILImage
+
+# ---------------------------------------------------------------------------
+# 한글 폰트 탐색 및 등록
+# Windows에는 기본적으로 맑은 고딕(malgun.ttf)이 들어있어 별도 폰트 파일
+# 없이도 동작한다. 리눅스(Streamlit Community Cloud 등)에 배포하는 경우에는
+# packages.txt 에 `fonts-nanum` 을 추가하거나, app.py와 같은 폴더에
+# fonts/NanumGothic.ttf 를 넣어두면 자동으로 사용된다.
+# ---------------------------------------------------------------------------
+
+_KOREAN_FONT_CANDIDATES = [
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "fonts", "NanumGothic.ttf"),
+    r"C:\Windows\Fonts\malgun.ttf",
+    r"C:\Windows\Fonts\malgunbd.ttf",
+    "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
+    "/usr/share/fonts/truetype/nanum/NanumBarunGothic.ttf",
+    "/System/Library/Fonts/Supplemental/AppleGothic.ttf",
+]
+
+KOREAN_FONT_NAME = "KoreanFont"
+
+
+def get_korean_font_path():
+    for path in _KOREAN_FONT_CANDIDATES:
+        if os.path.exists(path):
+            return path
+    return None
+
+
+def ensure_korean_font_registered():
+    """한글 폰트를 reportlab에 등록한다. 못 찾으면 None을 반환한다."""
+    if KOREAN_FONT_NAME in pdfmetrics.getRegisteredFontNames():
+        return KOREAN_FONT_NAME
+    font_path = get_korean_font_path()
+    if not font_path:
+        return None
+    try:
+        pdfmetrics.registerFont(TTFont(KOREAN_FONT_NAME, font_path))
+        return KOREAN_FONT_NAME
+    except Exception:
+        return None
 
 APP_TITLE = "현장 압수 절차 안내 (Digital Forensics Seizure Guide)"
 
@@ -369,7 +421,8 @@ def render_start():
 
     with st.form("case_info_form"):
         case_number = st.text_input("사건번호")
-        officer = st.text_input("담당자")
+        officer = st.text_input("담당 수사관 (성명/소속)")
+        suspect = st.text_input("피의자(소지자) 성명")
         location = st.text_input("현장 위치")
         seized_at = st.text_input(
             "압수 일시 (YYYY-MM-DD HH:MM)",
@@ -381,7 +434,8 @@ def render_start():
     if submitted:
         st.session_state.case_info = {
             "사건번호": case_number,
-            "담당자": officer,
+            "담당 수사관": officer,
+            "피의자(소지자) 성명": suspect,
             "현장 위치": location,
             "압수 일시": seized_at,
         }
@@ -401,43 +455,178 @@ def render_start():
     )
 
 
-def build_report_text():
+def _pdf_styles(font_name):
+    styles = getSampleStyleSheet()
+    base = font_name or "Helvetica"
+    return {
+        "title": ParagraphStyle(
+            "KTitle", parent=styles["Title"], fontName=base, fontSize=18, leading=22,
+        ),
+        "meta": ParagraphStyle(
+            "KMeta", parent=styles["Normal"], fontName=base, fontSize=10, leading=14,
+        ),
+        "step_title": ParagraphStyle(
+            "KStepTitle", parent=styles["Heading2"], fontName=base, fontSize=13, leading=17,
+            spaceBefore=14, spaceAfter=4, textColor=colors.HexColor("#1a1a1a"),
+        ),
+        "body": ParagraphStyle(
+            "KBody", parent=styles["Normal"], fontName=base, fontSize=10, leading=15,
+        ),
+        "caution": ParagraphStyle(
+            "KCaution", parent=styles["Normal"], fontName=base, fontSize=10, leading=14,
+            textColor=colors.HexColor("#b00020"),
+        ),
+        "decision": ParagraphStyle(
+            "KDecision", parent=styles["Normal"], fontName=base, fontSize=10, leading=14,
+            textColor=colors.HexColor("#0b6b2c"),
+        ),
+        "note": ParagraphStyle(
+            "KNote", parent=styles["Normal"], fontName=base, fontSize=10, leading=14,
+            textColor=colors.HexColor("#333333"), backColor=colors.HexColor("#f5f5f5"),
+        ),
+        "caption": ParagraphStyle(
+            "KCaption", parent=styles["Normal"], fontName=base, fontSize=8, leading=11,
+            textColor=colors.HexColor("#666666"),
+        ),
+    }
+
+
+def _esc(text):
+    """reportlab Paragraph는 간단한 HTML 서브셋을 쓰므로 특수문자를 이스케이프한다."""
+    return (
+        (text or "")
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+    )
+
+
+def build_pdf_bytes():
     device_type = st.session_state.device_type
     steps = DEVICE_STEPS[device_type]
     records = st.session_state.records
-    lines = []
-    lines.append("=" * 70)
-    lines.append("디지털 포렌식 현장 압수 절차 리포트 (Chain of Custody Log)")
-    lines.append("=" * 70)
-    lines.append(f"생성 시각: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    lines.append(f"기기 유형: {device_type}")
+
+    font_name = ensure_korean_font_registered()
+    styles = _pdf_styles(font_name)
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer, pagesize=A4,
+        topMargin=18 * mm, bottomMargin=18 * mm,
+        leftMargin=18 * mm, rightMargin=18 * mm,
+    )
+
+    story = []
+
+    if not font_name:
+        story.append(Paragraph(
+            "WARNING: Korean font not found on this system. Text below may not render "
+            "correctly. Place a .ttf font (e.g. NanumGothic.ttf) under a 'fonts' folder "
+            "next to app.py, or deploy on Windows where Malgun Gothic is built in.",
+            styles["caution"],
+        ))
+        story.append(Spacer(1, 8))
+
+    story.append(Paragraph("디지털 포렌식 현장 압수 절차 리포트", styles["title"]))
+    story.append(Paragraph("(Chain of Custody Log)", styles["meta"]))
+    story.append(Spacer(1, 10))
+
+    meta_rows = [
+        ["생성 시각", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")],
+        ["기기 유형", device_type],
+    ]
     for k, v in st.session_state.case_info.items():
-        lines.append(f"{k}: {v}")
-    lines.append("-" * 70)
+        meta_rows.append([k, v or "-"])
+
+    meta_table = Table(meta_rows, colWidths=[40 * mm, 120 * mm])
+    meta_table.setStyle(TableStyle([
+        ("FONTNAME", (0, 0), (-1, -1), font_name or "Helvetica"),
+        ("FONTSIZE", (0, 0), (-1, -1), 10),
+        ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#eeeeee")),
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#cccccc")),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+        ("TOPPADDING", (0, 0), (-1, -1), 4),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+    ]))
+    story.append(meta_table)
+    story.append(Spacer(1, 6))
+    story.append(HRFlowable(width="100%", color=colors.HexColor("#999999")))
+
     for i, step in enumerate(steps):
         rec = records[i]
         status = "[완료]" if rec["done"] else "[미완료]"
-        lines.append(f"\n{status} {step['title']}")
-        lines.append(step["detail"])
+        story.append(Paragraph(f"{status} {_esc(step['title'])}", styles["step_title"]))
+        story.append(Paragraph(_esc(step["detail"]).replace("\n", "<br/>"), styles["body"]))
+
         if step.get("caution"):
-            lines.append(f"주의: {step['caution']}")
+            story.append(Spacer(1, 3))
+            story.append(Paragraph(f"⚠ 주의: {_esc(step['caution'])}", styles["caution"]))
+
         if step.get("type") == "decision" and rec.get("decision"):
-            lines.append(f"▶ 선택된 결정: {rec['decision']}")
+            story.append(Spacer(1, 3))
+            story.append(Paragraph(f"▶ 선택된 결정: {_esc(rec['decision'])}", styles["decision"]))
             branch_text = step.get("branch_info", {}).get(rec["decision"])
             if branch_text:
-                lines.append(branch_text)
+                story.append(Paragraph(_esc(branch_text).replace("\n", "<br/>"), styles["decision"]))
+
         if rec["note"]:
-            lines.append(f"현장 메모: {rec['note']}")
+            story.append(Spacer(1, 4))
+            story.append(Paragraph(f"현장 메모: {_esc(rec['note'])}", styles["note"]))
+
         photos = rec.get("photos") or []
         if photos:
-            names = ", ".join(p.name for p in photos)
-            lines.append(f"첨부 사진 ({len(photos)}장): {names}")
-    lines.append("\n" + "=" * 70)
-    lines.append("서명란:")
-    lines.append("담당자 서명: ______________________   일시: ______________________")
-    lines.append("입회인 서명: ______________________   일시: ______________________")
-    lines.append("=" * 70)
-    return "\n".join(lines)
+            story.append(Spacer(1, 6))
+            max_width = 150 * mm
+            for photo in photos:
+                try:
+                    photo.seek(0)
+                    raw = photo.read()
+                    pil_img = PILImage.open(io.BytesIO(raw))
+                    pil_img.load()
+                    w, h = pil_img.size
+                    scale = min(max_width / w, 1.0)
+                    draw_w, draw_h = w * scale, h * scale
+                    # 세로 너무 길면 최대 높이로 제한
+                    max_height = 120 * mm
+                    if draw_h > max_height:
+                        ratio = max_height / draw_h
+                        draw_w, draw_h = draw_w * ratio, draw_h * ratio
+                    img_buffer = io.BytesIO()
+                    pil_img.convert("RGB").save(img_buffer, format="JPEG", quality=85)
+                    img_buffer.seek(0)
+                    story.append(RLImage(img_buffer, width=draw_w, height=draw_h))
+                    story.append(Paragraph(_esc(photo.name), styles["caption"]))
+                    story.append(Spacer(1, 4))
+                except Exception:
+                    story.append(Paragraph(
+                        f"(사진 첨부 실패 - 파일 형식 미지원: {_esc(photo.name)})",
+                        styles["caption"],
+                    ))
+
+        story.append(Spacer(1, 4))
+        story.append(HRFlowable(width="100%", color=colors.HexColor("#dddddd")))
+
+    story.append(Spacer(1, 16))
+    story.append(Paragraph("서명란", styles["step_title"]))
+    story.append(Spacer(1, 10))
+    sign_table = Table(
+        [["담당 수사관 서명:", "", "일시:", ""],
+         ["입회인 서명:", "", "일시:", ""]],
+        colWidths=[30 * mm, 50 * mm, 15 * mm, 45 * mm],
+    )
+    sign_table.setStyle(TableStyle([
+        ("FONTNAME", (0, 0), (-1, -1), font_name or "Helvetica"),
+        ("FONTSIZE", (0, 0), (-1, -1), 10),
+        ("LINEBELOW", (1, 0), (1, -1), 0.7, colors.black),
+        ("LINEBELOW", (3, 0), (3, -1), 0.7, colors.black),
+        ("TOPPADDING", (0, 0), (-1, -1), 10),
+    ]))
+    story.append(sign_table)
+
+    doc.build(story)
+    buffer.seek(0)
+    return buffer.getvalue()
 
 
 def render_guide():
@@ -495,7 +684,7 @@ def render_guide():
         thumb_cols = st.columns(3)
         for p_idx, photo in enumerate(rec["photos"]):
             with thumb_cols[p_idx % 3]:
-                st.image(photo, caption=photo.name, use_container_width=True)
+                st.image(photo, caption=photo.name, width="stretch")
     else:
         st.caption("아직 첨부된 사진이 없습니다.")
 
@@ -516,41 +705,26 @@ def render_guide():
 
     st.divider()
     st.markdown("### 📄 리포트 다운로드")
-    report_text = build_report_text()
     file_tag = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-
     total_photos = sum(len(st.session_state.records[i].get("photos") or []) for i in range(len(steps)))
 
-    dcol1, dcol2, dcol3 = st.columns(3)
+    if not get_korean_font_path():
+        st.warning(
+            "한글 폰트를 찾지 못했습니다. Windows에서는 보통 자동으로 잡히지만, "
+            "다른 OS에서는 app.py와 같은 폴더에 fonts/NanumGothic.ttf 를 넣어주세요. "
+            "폰트가 없어도 PDF는 생성되지만 한글이 깨져 보일 수 있습니다."
+        )
+
+    dcol1, dcol2 = st.columns(2)
     with dcol1:
+        pdf_bytes = build_pdf_bytes()
         st.download_button(
-            "TXT 리포트 다운로드",
-            data=report_text.encode("utf-8"),
-            file_name=f"forensic_report_{device_type}_{file_tag}.txt",
-            mime="text/plain",
+            "PDF 리포트 다운로드",
+            data=pdf_bytes,
+            file_name=f"forensic_report_{device_type}_{file_tag}.pdf",
+            mime="application/pdf",
         )
     with dcol2:
-        backup = {
-            "case_info": st.session_state.case_info,
-            "device_type": device_type,
-            "steps": [
-                {
-                    "title": steps[i]["title"],
-                    "done": st.session_state.records[i]["done"],
-                    "note": st.session_state.records[i]["note"],
-                    "decision": st.session_state.records[i].get("decision"),
-                    "photos": [p.name for p in (st.session_state.records[i].get("photos") or [])],
-                }
-                for i in range(len(steps))
-            ],
-        }
-        st.download_button(
-            "JSON 백업 다운로드",
-            data=json.dumps(backup, ensure_ascii=False, indent=2).encode("utf-8"),
-            file_name=f"forensic_report_{device_type}_{file_tag}.json",
-            mime="application/json",
-        )
-    with dcol3:
         if total_photos > 0:
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
@@ -561,7 +735,7 @@ def render_guide():
                         photo.seek(0)
                         zf.writestr(f"{step_folder}/{photo.name}", photo.read())
             st.download_button(
-                f"사진 전체 ZIP ({total_photos}장)",
+                f"사진 원본 전체 ZIP ({total_photos}장)",
                 data=zip_buffer.getvalue(),
                 file_name=f"forensic_photos_{device_type}_{file_tag}.zip",
                 mime="application/zip",
