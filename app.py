@@ -75,7 +75,7 @@ def ensure_korean_font_registered():
     except Exception:
         return None
 
-APP_TITLE = "현장 압수 절차 안내 (Digital Forensics Seizure Guide)"
+APP_TITLE = "현장 압수 절차 안내 (디지털 포렌식)"
 
 # ---------------------------------------------------------------------------
 # 절차 데이터 (tkinter 버전과 동일)
