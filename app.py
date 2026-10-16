@@ -347,6 +347,25 @@ IPHONE_STEPS = COMMON_PRE_STEPS + [
             "경우 조작 전후 과정을 반드시 촬영/기록한다. 충전 중에도 네트워크 "
             "격리 상태가 유지되는지 확인한다."
         ),
+        "role_override": {
+            "포렌식분석관": {
+                "detail": (
+                    "[1. 화면 꺼짐(자동 잠금) 방지 설정]\n"
+                    "- 경로: '설정' > '디스플레이 및 밝기' > '자동 잠금' > '안 함'으로 변경\n"
+                    "- 목적: 화면이 꺼져 재잠금되거나 BFU(Before First Unlock) 상태로 진입하는 것을 방지\n\n"
+                    "[2. 네트워크 완전 차단 (제어 센터 사용 금지)]\n"
+                    "- ⚠️ 주의: 제어 센터(상단 스와이프)에서 끄면 익일 새벽 자동 재연결되므로 절대 금지!\n"
+                    "- 반드시 '설정' 앱에 직접 들어가서 차단:\n"
+                    "  · '설정' > 'Wi-Fi' > 끔(OFF)\n"
+                    "  · '설정' > 'Bluetooth' > 끔(OFF)\n"
+                    "  · '설정' > '에어플레인 모드' > 켬(ON)\n\n"
+                    "[3. 전원 및 배터리 상시 유지]\n"
+                    "- 전원을 끄거나 재부팅하지 않고 보조배터리 즉시 연결 (AFU 상태 유지)"
+                ),
+                "caution": "제어 센터 토글이 아닌 반드시 [설정] 앱 내부에서 Wi-Fi/Bluetooth를 비활성화해야 원격 초기화(Find My) 및 자동 재연결을 완전히 방지할 수 있습니다.",
+            },
+        },
+        "iphone_settings": True,
     },
     {
         "title": "기기 식별 및 보안상태 확인 (포렌식 분석관과 공동 진행)",
@@ -1349,6 +1368,17 @@ def build_pdf_bytes():
             story.append(Spacer(1, 3))
             story.append(Paragraph(f"⚠ 주의: {_esc(caution_text)}", styles["caution"]))
 
+        if step.get("iphone_settings") and role == "포렌식분석관":
+            iphone_checks = []
+            if rec.get("iphone_autolock"): iphone_checks.append("자동잠금: 안함")
+            if rec.get("iphone_airplane"): iphone_checks.append("에어플레인: ON")
+            if rec.get("iphone_wifi_off"): iphone_checks.append("Wi-Fi: 설정앱 OFF")
+            if rec.get("iphone_bt_off"): iphone_checks.append("Bluetooth: 설정앱 OFF")
+            if rec.get("iphone_charging"): iphone_checks.append("상시 충전 연결")
+            if iphone_checks:
+                story.append(Spacer(1, 3))
+                story.append(Paragraph(f"⚙ iPhone 설정 확인: {_esc(', '.join(iphone_checks))}", styles["decision"]))
+
         if step.get("type") == "decision" and rec.get("decision"):
             story.append(Spacer(1, 3))
             story.append(Paragraph(f"▶ 선택된 결정: {_esc(rec['decision'])}", styles["decision"]))
@@ -1520,6 +1550,34 @@ def render_guide():
                         "여기서 끝나며, 이후 추출 작업은 포렌식 담당자가 전담합니다. "
                         "수사관은 아래에서 지금까지의 리포트를 다운로드할 수 있습니다."
                     )
+
+        if step.get("iphone_settings") and role == "포렌식분석관":
+            st.markdown("##### ⚙️ iPhone 현장 필수 보존 설정 체크")
+            rec["iphone_autolock"] = st.checkbox(
+                "자동 잠금 '안 함' 설정 완료 (설정 > 디스플레이 및 밝기 > 자동 잠금 > 안 함)",
+                value=rec.get("iphone_autolock", False),
+                key=f"setting_autolock_{idx}",
+            )
+            rec["iphone_airplane"] = st.checkbox(
+                "에어플레인 모드 활성화 (설정 > 에어플레인 모드 ON)",
+                value=rec.get("iphone_airplane", False),
+                key=f"setting_airplane_{idx}",
+            )
+            rec["iphone_wifi_off"] = st.checkbox(
+                "Wi-Fi 완전 차단 (설정 앱 내부 > Wi-Fi OFF)",
+                value=rec.get("iphone_wifi_off", False),
+                key=f"setting_wifi_{idx}",
+            )
+            rec["iphone_bt_off"] = st.checkbox(
+                "Bluetooth 완전 차단 (설정 앱 내부 > Bluetooth OFF)",
+                value=rec.get("iphone_bt_off", False),
+                key=f"setting_bt_{idx}",
+            )
+            rec["iphone_charging"] = st.checkbox(
+                "보조배터리 상시 충전 연결 (전원 꺼짐 및 BFU 방지)",
+                value=rec.get("iphone_charging", False),
+                key=f"setting_charging_{idx}",
+            )
 
         rec["done"] = st.checkbox("이 단계를 완료했습니다", value=rec["done"], key=f"done_{idx}")
         rec["note"] = st.text_area("현장 메모", value=rec["note"], key=f"note_{idx}", height=100)
