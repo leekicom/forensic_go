@@ -833,17 +833,47 @@ st.set_page_config(page_title=APP_TITLE, page_icon="🔎", layout="centered")
 st.markdown(
     """
     <style>
-    /* 모바일에서 한글 단어가 중간에서 갈라지지 않도록 하고 제목 크기를 조정 */
-    .stMarkdown, .stAlert, [data-testid="stCaptionContainer"] {
+    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
+
+    /* 가독성 높은 한글 서체(Pretendard) 및 모바일 단어 분리 방지 */
+    html, body, [class*="css"], .stMarkdown, .stAlert, [data-testid="stCaptionContainer"], button, input, textarea, select {
+        font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif !important;
         word-break: keep-all;
         overflow-wrap: break-word;
+        letter-spacing: -0.01em;
     }
+
+    /* 본문 및 안내문 행간 개선으로 읽기 편하게 조정 */
+    .stMarkdown p, .stMarkdown li, [data-testid="stAlert"] {
+        line-height: 1.65 !important;
+        font-size: 0.98rem;
+    }
+
+    /* 모바일 환경 최적화 */
     @media (max-width: 640px) {
-        .block-container { padding-left: 1rem; padding-right: 1rem; }
-        h1 { font-size: 1.65rem !important; line-height: 1.3 !important; }
+        .block-container {
+            padding-left: 1.1rem !important;
+            padding-right: 1.1rem !important;
+            padding-top: 1.8rem !important;
+            padding-bottom: 3.5rem !important;
+        }
+        h1 { font-size: 1.55rem !important; line-height: 1.35 !important; }
         h2 { font-size: 1.25rem !important; line-height: 1.4 !important; }
         h3 { font-size: 1.1rem !important; line-height: 1.4 !important; }
-        .stButton button { min-height: 2.8rem; white-space: normal; }
+        
+        /* 모바일 터치 친화적 버튼 높이 */
+        .stButton button {
+            min-height: 46px !important;
+            font-size: 0.95rem !important;
+            border-radius: 10px !important;
+            white-space: normal !important;
+        }
+
+        /* 폼 입력창 가독성 및 터치 크기 */
+        .stTextInput input, .stTextArea textarea, .stSelectbox select {
+            font-size: 1rem !important;
+            border-radius: 8px !important;
+        }
     }
     </style>
     """,
