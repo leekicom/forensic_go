@@ -835,7 +835,16 @@ st.markdown(
     <style>
     @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 
-    /* 가독성 높은 한글 서체(Pretendard) 및 모바일 단어 분리 방지 */
+    /* ==========================================================================
+       1. 글로벌 테마 & 타이포그래피 (http://127.0.0.1:5000 스타일 일치)
+       Dark Slate 950 (#020617) + Teal (#14b8a6) & Indigo (#6366f1)
+       ========================================================================== */
+    .stApp {
+        background-color: #020617 !important;
+        color: #f8fafc !important;
+        font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif !important;
+    }
+
     html, body, [class*="css"], .stMarkdown, .stAlert, [data-testid="stCaptionContainer"], button, input, textarea, select {
         font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif !important;
         word-break: keep-all;
@@ -843,37 +852,286 @@ st.markdown(
         letter-spacing: -0.01em;
     }
 
-    /* 본문 및 안내문 행간 개선으로 읽기 편하게 조정 */
-    .stMarkdown p, .stMarkdown li, [data-testid="stAlert"] {
-        line-height: 1.65 !important;
-        font-size: 0.98rem;
+    /* 상단 스트림릿 기본 헤더/푸터 숨김 */
+    header[data-testid="stHeader"] {
+        display: none !important;
+    }
+    #MainMenu, footer {
+        visibility: hidden !important;
+        height: 0 !important;
     }
 
-    /* 모바일 환경 최적화 */
-    @media (max-width: 640px) {
-        .block-container {
-            padding-left: 1.1rem !important;
-            padding-right: 1.1rem !important;
-            padding-top: 1.8rem !important;
-            padding-bottom: 3.5rem !important;
-        }
-        h1 { font-size: 1.55rem !important; line-height: 1.35 !important; }
-        h2 { font-size: 1.25rem !important; line-height: 1.4 !important; }
-        h3 { font-size: 1.1rem !important; line-height: 1.4 !important; }
-        
-        /* 모바일 터치 친화적 버튼 높이 */
-        .stButton button {
-            min-height: 46px !important;
-            font-size: 0.95rem !important;
-            border-radius: 10px !important;
-            white-space: normal !important;
-        }
+    /* 모바일 및 화면 컨테이너 (최대폭 580px, 중앙 정렬, 적절한 여백) */
+    .block-container {
+        padding-top: 1.5rem !important;
+        padding-bottom: 4rem !important;
+        padding-left: 1.15rem !important;
+        padding-right: 1.15rem !important;
+        max-width: 580px !important;
+        margin: 0 auto !important;
+    }
 
-        /* 폼 입력창 가독성 및 터치 크기 */
-        .stTextInput input, .stTextArea textarea, .stSelectbox select {
-            font-size: 1rem !important;
-            border-radius: 8px !important;
-        }
+    /* 제목 및 텍스트 가독성 */
+    h1 {
+        font-size: 1.55rem !important;
+        font-weight: 800 !important;
+        color: #f8fafc !important;
+        letter-spacing: -0.02em !important;
+        margin-bottom: 0.25rem !important;
+    }
+    h2 {
+        font-size: 1.25rem !important;
+        font-weight: 700 !important;
+        color: #f1f5f9 !important;
+        letter-spacing: -0.015em !important;
+    }
+    h3 {
+        font-size: 1.1rem !important;
+        font-weight: 700 !important;
+        color: #e2e8f0 !important;
+        letter-spacing: -0.015em !important;
+    }
+    [data-testid="stCaptionContainer"] p {
+        color: #94a3b8 !important;
+        font-size: 0.85rem !important;
+    }
+    .stMarkdown p, .stMarkdown li {
+        color: #e2e8f0 !important;
+        font-size: 0.95rem !important;
+        line-height: 1.65 !important;
+    }
+
+    /* ==========================================================================
+       2. 카드 & 폼 스타일 (Slate 900 Card + Slate 800 Border)
+       ========================================================================== */
+    [data-testid="stForm"] {
+        background-color: #0f172a !important;
+        border: 1px solid #1e293b !important;
+        border-radius: 18px !important;
+        padding: 1.35rem 1.25rem !important;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4) !important;
+    }
+
+    /* 폼 입력창 (사건번호, 수사관 등) */
+    .stTextInput label, .stTextArea label, .stSelectbox label, .stRadio label {
+        color: #cbd5e1 !important;
+        font-weight: 600 !important;
+        font-size: 0.86rem !important;
+    }
+
+    .stTextInput input, .stTextArea textarea, .stSelectbox > div > div {
+        background-color: #1e293b !important;
+        border: 1px solid #334155 !important;
+        border-radius: 12px !important;
+        color: #f8fafc !important;
+        font-size: 0.94rem !important;
+        padding: 10px 13px !important;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .stTextInput input:focus, .stTextArea textarea:focus {
+        border-color: #38bdf8 !important;
+        box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.3) !important;
+    }
+
+    /* ==========================================================================
+       3. 라디오 버튼 (터치 카드 칩 스타일 - 모바일 터치 최적화)
+       ========================================================================== */
+    div[data-testid="stRadio"] > div[role="radiogroup"] {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 4px;
+    }
+    div[data-testid="stRadio"] > div[role="radiogroup"] > label {
+        flex: 1 1 calc(50% - 8px);
+        min-width: 110px;
+        background-color: #1e293b !important;
+        border: 1px solid #334155 !important;
+        border-radius: 12px !important;
+        padding: 10px 14px !important;
+        margin: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        cursor: pointer !important;
+        min-height: 46px !important;
+        transition: all 0.2s ease;
+    }
+    div[data-testid="stRadio"] > div[role="radiogroup"] > label:hover {
+        background-color: #273549 !important;
+        border-color: #38bdf8 !important;
+    }
+    div[data-testid="stRadio"] > div[role="radiogroup"] > label:has(input:checked) {
+        background: rgba(2, 132, 199, 0.2) !important;
+        border-color: #38bdf8 !important;
+        box-shadow: 0 2px 10px rgba(56, 189, 248, 0.25) !important;
+    }
+    div[data-testid="stRadio"] > div[role="radiogroup"] > label:has(input:checked) span {
+        color: #38bdf8 !important;
+        font-weight: 700 !important;
+    }
+
+    /* ==========================================================================
+       4. 버튼 스타일링 (흰색 배경 완전 제거 & 고대비 다크/스카이블루 일괄 적용)
+       ========================================================================== */
+    /* 모든 버튼 공통 베이스 (흰색 배경 원천 차단) */
+    button, 
+    .stButton button, 
+    [data-testid="stFormSubmitButton"] button, 
+    [data-testid="stDownloadButton"] button, 
+    [data-testid^="baseButton"] {
+        background-color: #1e293b !important;
+        background-image: none !important;
+        color: #f8fafc !important;
+        border: 1px solid #475569 !important;
+        border-radius: 12px !important;
+        font-size: 0.96rem !important;
+        font-weight: 700 !important;
+        min-height: 48px !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+        transition: all 0.2s ease !important;
+    }
+    button:active, .stButton button:active {
+        transform: scale(0.98) !important;
+    }
+
+    /* [메인 액션 버튼]: 시작하기, 다음 단계, 다운로드 버튼 (선명한 스카이블루) */
+    [data-testid="stFormSubmitButton"] button,
+    div[data-testid="column"]:nth-child(2) .stButton button,
+    [data-testid="stDownloadButton"] button,
+    button[kind="primary"] {
+        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+        color: #ffffff !important;
+        border: 1px solid #38bdf8 !important;
+        box-shadow: 0 4px 14px rgba(2, 132, 199, 0.45) !important;
+    }
+    [data-testid="stFormSubmitButton"] button:hover,
+    div[data-testid="column"]:nth-child(2) .stButton button:hover,
+    [data-testid="stDownloadButton"] button:hover,
+    button[kind="primary"]:hover {
+        background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%) !important;
+        border-color: #7dd3fc !important;
+        color: #ffffff !important;
+        box-shadow: 0 6px 18px rgba(56, 189, 248, 0.5) !important;
+    }
+
+    /* [보조 버튼]: 이전 단계, 처음으로, 한눈에 보기 이동 버튼 */
+    div[data-testid="column"]:nth-child(1) .stButton button,
+    [data-testid="stExpander"] .stButton button,
+    button[kind="secondary"] {
+        background-color: #1e293b !important;
+        border: 1px solid #475569 !important;
+        color: #f1f5f9 !important;
+    }
+    div[data-testid="column"]:nth-child(1) .stButton button:hover,
+    [data-testid="stExpander"] .stButton button:hover,
+    button[kind="secondary"]:hover {
+        background-color: #334155 !important;
+        color: #ffffff !important;
+        border-color: #94a3b8 !important;
+    }
+
+    /* [비활성화 버튼]: 첫 단계에서 이전 버튼 등 */
+    button:disabled, button[disabled], .stButton button:disabled {
+        background-color: #0f172a !important;
+        background-image: none !important;
+        color: #475569 !important;
+        border: 1px solid #1e293b !important;
+        box-shadow: none !important;
+        cursor: not-allowed !important;
+        opacity: 0.5 !important;
+    }
+
+    /* ==========================================================================
+       5. 프로그레스 바 & 체크박스
+       ========================================================================== */
+    div[data-testid="stProgress"] > div > div > div > div {
+        background: linear-gradient(90deg, #38bdf8 0%, #0284c7 100%) !important;
+        border-radius: 9999px !important;
+        height: 7px !important;
+        box-shadow: 0 0 10px rgba(56, 189, 248, 0.5) !important;
+    }
+
+    div[data-testid="stCheckbox"] {
+        background-color: #0f172a !important;
+        border: 1px solid #1e293b !important;
+        border-radius: 12px !important;
+        padding: 11px 14px !important;
+        margin: 0.9rem 0 !important;
+    }
+    div[data-testid="stCheckbox"]:has(input:checked) {
+        background-color: rgba(16, 185, 129, 0.12) !important;
+        border-color: #10b981 !important;
+    }
+    div[data-testid="stCheckbox"]:has(input:checked) span {
+        color: #34d399 !important;
+        font-weight: 700 !important;
+    }
+
+    /* ==========================================================================
+       6. 알림 상자 (주의, 성공, 안내) - 높은 명도 대비
+       ========================================================================== */
+    [data-testid="stAlert"] {
+        border-radius: 14px !important;
+        padding: 0.85rem 1.1rem !important;
+        background-color: #0f172a !important;
+        border: 1px solid #334155 !important;
+    }
+    div[data-baseweb="notification"]:has(div.stAlert) {
+        background-color: #0f172a !important;
+    }
+    /* 주의(경고) */
+    div[data-testid="stAlert"]:has([aria-label="warning"]), div[data-testid="stAlert"]:has(svg[data-testid="WarningIcon"]) {
+        border-left: 4px solid #f59e0b !important;
+        background: rgba(245, 158, 11, 0.08) !important;
+    }
+    /* 성공 */
+    div[data-testid="stAlert"]:has([aria-label="success"]) {
+        border-left: 4px solid #10b981 !important;
+        background: rgba(16, 185, 129, 0.08) !important;
+    }
+    /* 안내 */
+    div[data-testid="stAlert"]:has([aria-label="info"]) {
+        border-left: 4px solid #38bdf8 !important;
+        background: rgba(2, 132, 199, 0.1) !important;
+    }
+
+    /* ==========================================================================
+       7. 파일 업로더 & 사진 썸네일 & 다운로드 버튼
+       ========================================================================== */
+    [data-testid="stFileUploader"] {
+        background-color: #0f172a !important;
+        border: 1px dashed #334155 !important;
+        border-radius: 14px !important;
+        padding: 1rem !important;
+    }
+    [data-testid="stImage"] img {
+        border-radius: 12px !important;
+        border: 1px solid #1e293b !important;
+    }
+
+    [data-testid="stDownloadButton"] button {
+        min-height: 48px !important;
+        border-radius: 12px !important;
+        font-weight: 700 !important;
+        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+        color: #ffffff !important;
+        border: 1px solid #38bdf8 !important;
+        box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35) !important;
+    }
+    [data-testid="stDownloadButton"] button:hover {
+        background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%) !important;
+        box-shadow: 0 6px 18px rgba(56, 189, 248, 0.45) !important;
+    }
+
+    [data-testid="stExpander"] {
+        border-radius: 14px !important;
+        border: 1px solid #1e293b !important;
+        background-color: #0f172a !important;
+    }
+    hr {
+        border-color: #1e293b !important;
     }
     </style>
     """,
