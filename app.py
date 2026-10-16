@@ -827,7 +827,11 @@ def get_skipped_step_indices(steps, records, role):
 
 
 def get_visible_step_indices(steps, records, role):
-    """생략 대상만 제외한 전체 단계 인덱스. 역할별 진행/다운로드 제한은 호출부에서 적용한다."""
+    """생략 대상만 제외한 전체 단계 인덱스. 수사관은 4단계까지만 표시한다."""
+    if role == "수사관":
+        effective_last = get_effective_last_index(steps, records, role)
+        return [i for i in range(len(steps)) if i <= effective_last]
+
     skipped = get_skipped_step_indices(steps, records, role)
     return [i for i in range(len(steps)) if i not in skipped]
 
