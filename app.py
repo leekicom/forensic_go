@@ -23,6 +23,13 @@ import io
 import os
 import zipfile
 
+KST = datetime.timezone(datetime.timedelta(hours=9))
+
+
+def now_kst():
+    """한국 표준시(KST, UTC+9) 기준 현재 시각을 반환한다."""
+    return datetime.datetime.now(KST)
+
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import mm
@@ -1163,7 +1170,7 @@ def render_start():
         location = st.text_input("현장 위치")
         seized_at = st.text_input(
             "압수 일시 (YYYY-MM-DD HH:MM)",
-            value=datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
+            value=now_kst().strftime("%Y-%m-%d %H:%M"),
         )
         role = st.radio(
             "현장 수행 주체",
@@ -1283,7 +1290,7 @@ def build_pdf_bytes():
     story.append(Spacer(1, 10))
 
     meta_rows = [
-        ["생성 시각", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")],
+        ["생성 시각", now_kst().strftime("%Y-%m-%d %H:%M:%S")],
         ["기기 유형", device_type],
         ["현장 수행 주체", role or "-"],
     ]
@@ -1559,7 +1566,7 @@ def render_guide():
     if device_type:
         st.divider()
         st.markdown("### 📄 리포트 다운로드")
-        file_tag = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        file_tag = now_kst().strftime("%Y%m%d_%H%M%S")
         # 다운로드 가능한 사진도 PDF와 같은 단계 범위로 제한한다.
         export_last_index = get_effective_last_index(steps, st.session_state.records, role)
         export_indices = [i for i in get_visible_step_indices(steps, st.session_state.records, role) if i <= export_last_index]
