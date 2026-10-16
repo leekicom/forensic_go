@@ -764,19 +764,23 @@ def get_effective_last_index(steps, records, role):
 
 
 def get_skipped_step_indices(steps, records, role):
-    """포렌식분석관은 선택한 처리 경로에 따라 현장 단계 일부를 생략한다.
+    """포렌식분석관은 기기 유형과 선택한 처리 경로에 따라 현장 단계를 생략한다.
 
     - 현장 즉시 이미지 추출: 증거물 포장 및 봉인 단계를 생략
-    - 압수 후 실험실 이송: 현장 전문 추출팀 인계 단계를 생략
+    - PC에서 압수 후 실험실 이송: 현장 이미징 단계(8번)를 생략
+    - 모바일 기기에서 압수 후 실험실 이송: 현장 전문 추출팀 인계 단계를 생략
     """
     if role != "포렌식분석관":
         return set()
 
     decision = get_selected_decision(steps, records)
+    titles = {step.get("title") for step in steps}
+    is_pc = "휘발성 메모리(RAM) 수집 판단 및 저장매체 식별" in titles
+
     if decision == "현장 즉시 이미지 추출":
         skipped_title = "증거물 포장 및 봉인"
     elif decision == "압수 후 실험실 이송":
-        skipped_title = "전문 추출팀 인계"
+        skipped_title = "포렌식 이미징 및 해시값 기록" if is_pc else "전문 추출팀 인계"
     else:
         return set()
 
