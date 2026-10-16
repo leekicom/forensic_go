@@ -876,6 +876,9 @@ def build_pdf_bytes():
     role = st.session_state.role
     steps = get_full_steps(device_type)
     records = st.session_state.records
+    # 수사관용 PDF에는 1~4단계만 포함한다. 포렌식분석관은 전체 단계를 포함한다.
+    report_last_index = get_effective_last_index(steps, records, role)
+    report_steps = steps[: report_last_index + 1]
 
     font_name = ensure_korean_font_registered()
     styles = _pdf_styles(font_name)
@@ -930,10 +933,10 @@ def build_pdf_bytes():
     story.append(Spacer(1, 6))
     story.append(HRFlowable(width="100%", color=colors.HexColor("#999999")))
 
-    selected_decision = get_selected_decision(steps, records)
+    selected_decision = get_selected_decision(report_steps, records)
     default_rec = {"done": False, "note": "", "photos": [], "decision": None, "tool": None}
 
-    for i, step in enumerate(steps):
+    for i, step in enumerate(report_steps):
         rec = records.get(i, default_rec)
         status = "[완료]" if rec["done"] else "[미완료]"
         story.append(Paragraph(f"{status} {i + 1}. {_esc(step['title'])}", styles["step_title"]))
@@ -1180,7 +1183,13 @@ def render_guide():
         st.divider()
         st.markdown("### 📄 리포트 다운로드")
         file_tag = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        total_photos = sum(len(st.session_state.records.get(i, {}).get("photos") or []) for i in range(len(steps)))
+        # 다운로드 가능한 사진도 PDF와 같은 단계 범위로 제한한다.
+        export_last_index = get_effective_last_index(steps, st.session_state.records, role)
+        export_steps = steps[: export_last_index + 1]
+        total_photos = sum(
+            len(st.session_state.records.get(i, {}).get("photos") or [])
+            for i in range(len(export_steps))
+        )
 
         if not get_korean_font_path():
             st.warning(
@@ -1202,14 +1211,14 @@ def render_guide():
             if total_photos > 0:
                 zip_buffer = io.BytesIO()
                 with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
-                    for i in range(len(steps)):
+                    for i in range(len(export_steps)):
                         photos = st.session_state.records.get(i, {}).get("photos") or []
-                        step_folder = f"{i:02d}_{steps[i]['title'][:20]}".replace("/", "-")
+                        step_folder = f"{i:02d}_{export_steps[i]['title'][:20]}".replace("/", "-")
                         for photo in photos:
                             photo.seek(0)
                             zf.writestr(f"{step_folder}/{photo.name}", photo.read())
                 st.download_button(
-                    f"사진 원본 전체 ZIP ({total_photos}장)",
+                    f"{'1~4단계' if role == '수사관' else '전체 단계'} 사진 ZIP ({total_photos}장)",
                     data=zip_buffer.getvalue(),
                     file_name=f"forensic_photos_{device_type}_{file_tag}.zip",
                     mime="application/zip",
