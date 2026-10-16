@@ -762,6 +762,24 @@ def get_effective_last_index(steps, records, role):
         return min(3, len(steps) - 1)
     return len(steps) - 1
 
+
+def get_skipped_step_indices(steps, records, role):
+    """포렌식분석관이 현장 즉시 이미지 추출을 선택하면 포장·봉인 단계를 생략한다."""
+    if role != "포렌식분석관":
+        return set()
+    if get_selected_decision(steps, records) != "현장 즉시 이미지 추출":
+        return set()
+    return {
+        i for i, step in enumerate(steps)
+        if step.get("title") == "증거물 포장 및 봉인"
+    }
+
+
+def get_visible_step_indices(steps, records, role):
+    """생략 대상만 제외한 전체 단계 인덱스. 역할별 진행/다운로드 제한은 호출부에서 적용한다."""
+    skipped = get_skipped_step_indices(steps, records, role)
+    return [i for i in range(len(steps)) if i not in skipped]
+
 # ---------------------------------------------------------------------------
 # Streamlit 앱
 # ---------------------------------------------------------------------------
@@ -876,9 +894,11 @@ def build_pdf_bytes():
     role = st.session_state.role
     steps = get_full_steps(device_type)
     records = st.session_state.records
-    # 수사관용 PDF에는 1~4단계만 포함한다. 포렌식분석관은 전체 단계를 포함한다.
+    # 수사관용 PDF에는 1~4단계만 포함한다. 포렌식분석관이 현장 즉시 이미징을
+    # 선택한 경우에는 증거물 포장·봉인 단계를 제외한다.
     report_last_index = get_effective_last_index(steps, records, role)
-    report_steps = steps[: report_last_index + 1]
+    report_indices = [i for i in get_visible_step_indices(steps, records, role) if i <= report_last_index]
+    report_steps = [(i, steps[i]) for i in report_indices]
 
     font_name = ensure_korean_font_registered()
     styles = _pdf_styles(font_name)
@@ -933,13 +953,13 @@ def build_pdf_bytes():
     story.append(Spacer(1, 6))
     story.append(HRFlowable(width="100%", color=colors.HexColor("#999999")))
 
-    selected_decision = get_selected_decision(report_steps, records)
+    selected_decision = get_selected_decision(steps, records)
     default_rec = {"done": False, "note": "", "photos": [], "decision": None, "tool": None}
 
-    for i, step in enumerate(report_steps):
-        rec = records.get(i, default_rec)
+    for display_index, (record_index, step) in enumerate(report_steps):
+        rec = records.get(record_index, default_rec)
         status = "[완료]" if rec["done"] else "[미완료]"
-        story.append(Paragraph(f"{status} {i + 1}. {_esc(step['title'])}", styles["step_title"]))
+        story.append(Paragraph(f"{status} {display_index + 1}. {_esc(step['title'])}", styles["step_title"]))
 
         if step.get("type") == "device_select":
             story.append(Paragraph(_esc(step["detail"]).replace("\n", "<br/>"), styles["body"]))
@@ -1049,7 +1069,12 @@ def render_guide():
     steps = get_full_steps(device_type)
     idx = st.session_state.current_index
     idx = min(idx, len(steps) - 1)  # 기기 유형이 아직 없을 때 범위를 벗어나지 않도록
+    visible_indices = get_visible_step_indices(steps, st.session_state.records, role)
+    if idx not in visible_indices:
+        later = [i for i in visible_indices if i > idx]
+        idx = later[0] if later else visible_indices[-1]
     st.session_state.current_index = idx
+    visible_position = visible_indices.index(idx)
     step = steps[idx]
     rec = get_record(idx)
 
@@ -1063,9 +1088,9 @@ def render_guide():
             st.session_state.stage = "start"
             st.rerun()
 
-    st.progress((idx + 1) / len(steps), text=f"{idx + 1} / {len(steps)} 단계")
+    st.progress((visible_position + 1) / len(visible_indices), text=f"{visible_position + 1} / {len(visible_indices)} 단계")
 
-    st.subheader(f"{idx + 1}. {step['title']}")
+    st.subheader(f"{visible_position + 1}. {step['title']}")
 
     if step.get("type") == "device_select":
         st.markdown(step["detail"].replace("\n", "  \n"))
@@ -1156,23 +1181,25 @@ def render_guide():
 
     # 모든 단계 내용(특히 결정 라디오 처리)이 끝난 뒤에 계산해야 이번 렌더링에서
     # 방금 선택한 결정값이 바로 반영된다.
+    visible_indices = get_visible_step_indices(steps, st.session_state.records, role)
+    visible_position = visible_indices.index(idx)
     effective_last = get_effective_last_index(steps, st.session_state.records, role)
 
     col1, col2, col3 = st.columns(3)
     with col1:
-        if st.button("◀ 이전 단계", disabled=(idx == 0)):
-            st.session_state.current_index -= 1
+        if st.button("◀ 이전 단계", disabled=(visible_position == 0)):
+            st.session_state.current_index = visible_indices[visible_position - 1]
             st.rerun()
     with col2:
-        can_advance = idx < len(steps) - 1 and idx < effective_last
+        can_advance = visible_position < len(visible_indices) - 1 and idx < effective_last
         device_missing = step.get("type") == "device_select" and not device_type
         if can_advance:
             if st.button("다음 단계 ▶", disabled=device_missing):
-                st.session_state.current_index += 1
+                st.session_state.current_index = visible_indices[visible_position + 1]
                 st.rerun()
             if device_missing:
                 st.caption("기기 유형을 선택하면 다음 단계로 진행할 수 있습니다.")
-        elif idx == effective_last and idx < len(steps) - 1:
+        elif role == "수사관" and idx == effective_last and idx < len(steps) - 1:
             st.success("수사관 절차는 4단계까지입니다. 이후 기술적 절차는 포렌식분석관이 이어서 수행합니다. 아래에서 리포트를 다운로드하세요.")
         else:
             st.success("마지막 단계입니다. 아래에서 리포트를 다운로드하세요.")
@@ -1185,10 +1212,11 @@ def render_guide():
         file_tag = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         # 다운로드 가능한 사진도 PDF와 같은 단계 범위로 제한한다.
         export_last_index = get_effective_last_index(steps, st.session_state.records, role)
-        export_steps = steps[: export_last_index + 1]
+        export_indices = [i for i in get_visible_step_indices(steps, st.session_state.records, role) if i <= export_last_index]
+        export_steps = [(i, steps[i]) for i in export_indices]
         total_photos = sum(
             len(st.session_state.records.get(i, {}).get("photos") or [])
-            for i in range(len(export_steps))
+            for i, _step in export_steps
         )
 
         if not get_korean_font_path():
@@ -1211,9 +1239,9 @@ def render_guide():
             if total_photos > 0:
                 zip_buffer = io.BytesIO()
                 with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
-                    for i in range(len(export_steps)):
-                        photos = st.session_state.records.get(i, {}).get("photos") or []
-                        step_folder = f"{i:02d}_{export_steps[i]['title'][:20]}".replace("/", "-")
+                    for display_index, (record_index, export_step) in enumerate(export_steps):
+                        photos = st.session_state.records.get(record_index, {}).get("photos") or []
+                        step_folder = f"{display_index + 1:02d}_{export_step['title'][:20]}".replace("/", "-")
                         for photo in photos:
                             photo.seek(0)
                             zf.writestr(f"{step_folder}/{photo.name}", photo.read())
@@ -1227,10 +1255,11 @@ def render_guide():
                 st.caption("첨부된 사진이 없습니다.")
 
         with st.expander("전체 단계 한눈에 보기 / 바로 이동"):
-            for i, s in enumerate(steps):
+            for display_index, i in enumerate(get_visible_step_indices(steps, st.session_state.records, role)):
+                s = steps[i]
                 mark = "✅" if st.session_state.records.get(i, {}).get("done") else "⬜"
                 locked = i > effective_last
-                label = f"{mark} {i + 1}. {s['title']}" + (" 🔒" if locked else "")
+                label = f"{mark} {display_index + 1}. {s['title']}" + (" 🔒" if locked else "")
                 if st.button(label, key=f"jump_{i}", disabled=locked):
                     st.session_state.current_index = i
                     st.rerun()
