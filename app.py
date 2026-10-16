@@ -1094,12 +1094,12 @@ def render_guide():
     rec = get_record(idx)
 
     header = f"[{device_type} · {role}]" if device_type else f"[{role}]"
-    top_l, top_r = st.columns([4, 1])
+    top_l, top_r = st.columns([3, 1], gap="small")
     with top_l:
         st.title("현장 압수 절차")
         st.caption(header)
     with top_r:
-        if st.button("처음으로"):
+        if st.button("⌂ 처음으로", use_container_width=True):
             st.session_state.stage = "start"
             st.rerun()
 
@@ -1200,16 +1200,16 @@ def render_guide():
     visible_position = visible_indices.index(idx)
     effective_last = get_effective_last_index(steps, st.session_state.records, role)
 
-    col1, col2, col3 = st.columns(3)
+    col1, col2 = st.columns(2, gap="small")
     with col1:
-        if st.button("◀ 이전 단계", disabled=(visible_position == 0)):
+        if st.button("◀ 이전 단계", disabled=(visible_position == 0), use_container_width=True):
             st.session_state.current_index = visible_indices[visible_position - 1]
             st.rerun()
     with col2:
         can_advance = visible_position < len(visible_indices) - 1 and idx < effective_last
         device_missing = step.get("type") == "device_select" and not device_type
         if can_advance:
-            if st.button("다음 단계 ▶", disabled=device_missing):
+            if st.button("다음 단계 ▶", disabled=device_missing, use_container_width=True):
                 st.session_state.current_index = visible_indices[visible_position + 1]
                 st.rerun()
             if device_missing:
@@ -1218,8 +1218,6 @@ def render_guide():
             st.success("수사관 절차는 4단계까지입니다. 이후 기술적 절차는 포렌식분석관이 이어서 수행합니다. 아래에서 리포트를 다운로드하세요.")
         else:
             st.success("마지막 단계입니다. 아래에서 리포트를 다운로드하세요.")
-    with col3:
-        pass
 
     if device_type:
         st.divider()
