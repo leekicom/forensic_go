@@ -78,12 +78,23 @@ def ensure_korean_font_registered():
 APP_TITLE = "현장 압수 절차 안내 (Digital Forensics Seizure Guide)"
 
 # ---------------------------------------------------------------------------
-# 절차 데이터 (tkinter 버전과 동일)
+# 절차 데이터
 # ---------------------------------------------------------------------------
+
+DEVICE_SELECT_STEP = {
+    "title": "압수 대상 기기 유형 선택",
+    "type": "device_select",
+    "detail": (
+        "현장에서 확보한 기기의 유형을 선택한다. 선택한 유형에 따라 이후\n"
+        "단계의 세부 절차(전원/네트워크 보존 방법, 식별 항목, 추출 방식 등)가\n"
+        "달라진다."
+    ),
+    "caution": "여러 기기를 동시에 압수하는 경우, 기기마다 이 프로그램을 별도로 실행하여 각각 기록한다.",
+}
 
 COMMON_PRE_STEPS = [
     {
-        "title": "0. 현장 안전 및 권한 확인",
+        "title": "현장 안전 및 권한 확인",
         "detail": (
             "- 압수수색영장 등 법적 권한 범위를 먼저 확인한다.\n"
             "- 현장 책임자(소지자/관리자)에게 신분과 목적을 고지한다.\n"
@@ -92,7 +103,7 @@ COMMON_PRE_STEPS = [
         "caution": "법적 권한 없이는 어떠한 기기도 조작/압수하지 않는다.",
     },
     {
-        "title": "1. 현장 사진/영상 기록",
+        "title": "현장 사진/영상 기록",
         "detail": (
             "- 기기의 위치, 화면 상태(켜짐/꺼짐), 주변 배선, 연결된 주변기기를 촬영한다.\n"
             "- 타임스탬프가 남도록 촬영하고, 전체 현장 → 기기 근접 순으로 기록한다."
@@ -103,7 +114,7 @@ COMMON_PRE_STEPS = [
 
 PC_STEPS = COMMON_PRE_STEPS + [
     {
-        "title": "2. 전원 상태 확인 및 네트워크 차단 검토",
+        "title": "전원 상태 확인 및 네트워크 차단 검토",
         "detail": (
             "[전원 상태]\n"
             "- 모니터 화면과 본체 상태(LED, 팬 소음 등)로 전원 ON/OFF를 확인한다.\n"
@@ -121,7 +132,7 @@ PC_STEPS = COMMON_PRE_STEPS + [
         ),
     },
     {
-        "title": "3. 휘발성 메모리(RAM) 수집 판단 및 저장매체 식별",
+        "title": "휘발성 메모리(RAM) 수집 판단 및 저장매체 식별",
         "detail": (
             "- 기기가 켜져 있고 암호화(BitLocker 등)가 의심되는 경우, RAM 이미징을\n"
             "  통한 복호화 키 확보가 필요한지 판단한다.\n"
@@ -148,7 +159,7 @@ PC_STEPS = COMMON_PRE_STEPS + [
         },
     },
     {
-        "title": "4. 전원 차단, 케이블 라벨링 및 쓰기방지장치 준비",
+        "title": "전원 차단, 케이블 라벨링 및 쓰기방지장치 준비",
         "detail": (
             "- 휘발성 수집이 끝났거나 불필요하다면, 전원 케이블을 직접 뽑아 안전하게\n"
             "  종료한다(정상 종료 대신 플러그 분리를 권장하는 기관 지침이 많음).\n"
@@ -159,7 +170,42 @@ PC_STEPS = COMMON_PRE_STEPS + [
         "caution": "노트북은 배터리도 함께 분리하거나 전원이 완전히 차단되었는지 확인한다. 쓰기방지장치 없이 원본 저장매체를 PC에 직접 마운트하지 않는다.",
     },
     {
-        "title": "5. 포렌식 이미징 및 해시값 기록",
+        "title": "현장 이미지 추출 여부 결정",
+        "type": "decision",
+        "options": ["현장 즉시 이미지 추출", "압수 후 실험실 이송", "보류 (책임자 추가 판단 필요)"],
+        "detail": (
+            "현장에서 바로 저장매체를 이미징할지, PC 또는 저장매체를 압수해\n"
+            "실험실로 옮긴 뒤 처리할지를 아래 기준으로 판단해 선택한다. 동행한\n"
+            "포렌식 분석관과 협의하여 결정한다.\n\n"
+            "판단 기준:\n"
+            "- 시간 민감성: 암호화 재잠금, 시스템 자동 종료 위험이 임박했는가\n"
+            "- 현장 장비: 공인 이미징 장비와 전문 인력이 현장에 있는가\n"
+            "- 공간/환경: 전력, 작업 테이블 등 여건이 되는가\n"
+            "- 법적 권한 범위: 영장/동의 범위가 현장 이미징까지 포함하는가\n"
+            "- 증거 복잡성: 대용량 저장소, RAID 구성 등으로 실험실 정밀 분석이\n"
+            "  필요한 상황인가"
+        ),
+        "caution": "결정 권한은 현장 책임자(또는 기관 SOP가 지정한 담당자)에게 있다. 애매하면 '보류'를 선택하고 책임자 지시를 받는다.",
+        "branch_info": {
+            "현장 즉시 이미지 추출": (
+                "→ 전력, 공간 등 현장 작업 여건을 지원하며 공인 장비로 이미징한다.\n"
+                "   작업 시작/종료 시각, 사용 장비명, 담당자를 기록한다. 추출된\n"
+                "   사본은 해시값을 출력해 그 자리에서 피의자(소지자)에게 고지하며,\n"
+                "   압수물로는 취급하지 않는다. PC/저장매체 원본은 상황에 따라\n"
+                "   반환하거나 별도 압수 여부를 책임자와 협의한다."
+            ),
+            "압수 후 실험실 이송": (
+                "→ PC 또는 저장매체를 봉인하여 실험실로 이송한다. 이송 책임자와\n"
+                "   시각을 기록한다."
+            ),
+            "보류 (책임자 추가 판단 필요)": (
+                "→ 책임자 지시가 있을 때까지 현재 보존 상태를 유지한다. 판단이\n"
+                "   내려지면 이 선택을 다시 바꾸고 사유를 메모에 남긴다."
+            ),
+        },
+    },
+    {
+        "title": "포렌식 이미징 및 해시값 기록",
         "detail": (
             "- 공인 포렌식 이미징 도구로 비트 단위 이미지를 생성한다.\n"
             "- 이미징 전/후 SHA-256(또는 MD5) 해시값을 산출하여 원본과 사본의\n"
@@ -183,28 +229,71 @@ PC_STEPS = COMMON_PRE_STEPS + [
                 ),
             },
         },
+        "variants": {
+            "현장 즉시 이미지 추출": (
+                "[현장 추출 선택됨] 작업 종료 후 산출된 해시값을 그 자리에서\n"
+                "피의자(소지자)에게 고지하고 교부확인서에 서명을 받는다. 추출된\n"
+                "사본 자체는 압수물로 취급하지 않는다."
+            ),
+            "압수 후 실험실 이송": (
+                "[실험실 이송 선택됨] 현장에서는 이미징하지 않고 '이송 전 봉인'까지만\n"
+                "진행한다. 실험실 도착 후 공인 인력이 이미징을 수행한다."
+            ),
+            "보류 (책임자 추가 판단 필요)": (
+                "[보류 선택됨] 책임자 지시가 내려온 뒤 진행한다."
+            ),
+        },
     },
     {
-        "title": "6. 증거물 포장 및 봉인",
+        "title": "증거물 포장 및 봉인",
         "detail": (
             "- 정전기 방지 봉투(Anti-static bag)에 저장매체를 담는다.\n"
             "- 봉인 스티커에 서명/날짜를 기입하고 봉인 상태를 사진으로 남긴다."
         ),
         "caution": "충격/자기장에 노출되지 않도록 운반에 유의한다.",
+        "variants": {
+            "현장 즉시 이미지 추출": (
+                "[현장 추출] 추출된 사본은 압수물이 아니므로 별도로 포장하지 않는다.\n"
+                "해시값 출력물과 피의자 교부확인서를 사건기록에 편철해 보관한다.\n"
+                "원본 PC/저장매체를 별도 압수하기로 한 경우에만 포장·봉인한다."
+            ),
+            "압수 후 실험실 이송": (
+                "[실험실 이송] 원본(PC 또는 저장매체)을 포장·봉인한다."
+            ),
+            "보류 (책임자 추가 판단 필요)": (
+                "[보류] 결정 전까지는 보존 상태만 유지하고, 최종 포장은 경로가\n"
+                "확정된 뒤 진행한다."
+            ),
+        },
     },
     {
-        "title": "7. 증거물 목록 및 인수인계 기록 작성",
+        "title": "증거물 목록 및 인수인계 기록 작성",
         "detail": (
             "- 압수물 목록(품명, 수량, 일련번호, 상태)을 작성한다.\n"
             "- Chain of Custody(증거보관연계) 문서에 담당자, 시각, 장소를 기록한다."
         ),
         "caution": "이후 모든 취급자는 인계 시점마다 서명을 남긴다.",
+        "variants": {
+            "현장 즉시 이미지 추출": (
+                "[현장 추출] 압수물 목록에는 실제로 압수한 품목만 기재한다.\n"
+                "추출 사본의 해시값과 피의자 교부 내역은 압수물 목록이 아닌\n"
+                "별도의 '현장 추출 확인서'에 기록하여 사건기록에 첨부한다."
+            ),
+            "압수 후 실험실 이송": (
+                "[실험실 이송] 목록에 이송 경로(출발지→도착지), 이송 담당자,\n"
+                "이송 수단을 함께 기재한다."
+            ),
+            "보류 (책임자 추가 판단 필요)": (
+                "[보류] 최종 경로가 정해지면 이 목록에 사후 기재하고, 보류 기간\n"
+                "동안의 보관 책임자를 명시해 둔다."
+            ),
+        },
     },
 ]
 
 IPHONE_STEPS = COMMON_PRE_STEPS + [
     {
-        "title": "2. 전원 상태 확인 및 네트워크·배터리 보존",
+        "title": "전원 상태 확인 및 네트워크·배터리 보존",
         "detail": (
             "[전원/잠금 상태]\n"
             "- 화면이 켜져 있는지, 잠금(Lock) 상태인지 확인하고 촬영한다.\n"
@@ -225,7 +314,7 @@ IPHONE_STEPS = COMMON_PRE_STEPS + [
         ),
     },
     {
-        "title": "3. 기기 식별 및 보안상태 확인 (포렌식 분석관과 공동 진행)",
+        "title": "기기 식별 및 보안상태 확인 (포렌식 분석관과 공동 진행)",
         "detail": (
             "이 단계는 전문적인 기술 판단이 포함되어 있어 현장 수사관 단독으로\n"
             "진행하기 어렵다. 압수 현장에 동행한 포렌식 분석관과 함께 아래 항목을\n"
@@ -249,7 +338,7 @@ IPHONE_STEPS = COMMON_PRE_STEPS + [
         },
     },
     {
-        "title": "4. 현장 이미지 추출 여부 결정",
+        "title": "현장 이미지 추출 여부 결정",
         "type": "decision",
         "options": ["현장 즉시 이미지 추출", "압수 후 실험실 이송", "보류 (책임자 추가 판단 필요)"],
         "detail": (
@@ -284,7 +373,7 @@ IPHONE_STEPS = COMMON_PRE_STEPS + [
         },
     },
     {
-        "title": "5. 잠금해제/복호화 - 전문 추출팀 인계 체크리스트",
+        "title": "잠금해제/복호화 - 전문 추출팀 인계 체크리스트",
         "detail": (
             "실제 잠금해제·복호화 작업은 공인 장비(Cellebrite UFED, GrayKey 등)와\n"
             "자격을 갖춘 전문 추출팀만 수행한다. 현장 담당자는 아래 정보를\n"
@@ -322,11 +411,11 @@ IPHONE_STEPS = COMMON_PRE_STEPS + [
         },
     },
     {
-        "title": "6. 전문 추출팀 인계",
+        "title": "전문 추출팀 인계",
         "detail": (
             "- 법적 권한과 절차에 따라 공인 모바일 포렌식 장비를 보유한\n"
             "  전문 인력에게 인계한다.\n"
-            "- 위 체크리스트와 4단계에서 선택한 처리 방식(현장 추출/실험실 이송)을\n"
+            "- 위 체크리스트와 앞선 '현장 이미지 추출 여부 결정' 단계에서 선택한 처리 방식을\n"
             "  함께 전달한다."
         ),
         "caution": "비전문 인력이 임의 소프트웨어로 추출을 시도하면 증거능력이 부정될 수 있다.",
@@ -346,7 +435,7 @@ IPHONE_STEPS = COMMON_PRE_STEPS + [
             ),
             "보류 (책임자 추가 판단 필요)": (
                 "[보류] 아직 인계 대상이 정해지지 않았으므로 이 단계는 보류한다.\n"
-                "책임자의 결정이 내려오면 4단계로 돌아가 선택을 변경한 뒤 다시\n"
+                "책임자의 결정이 내려오면 앞선 결정 단계로 돌아가 선택을 변경한 뒤 다시\n"
                 "진행한다."
             ),
         },
@@ -365,7 +454,7 @@ IPHONE_STEPS = COMMON_PRE_STEPS + [
         },
     },
     {
-        "title": "7. 증거물 포장 및 봉인",
+        "title": "증거물 포장 및 봉인",
         "detail": "- 페러데이백째로 정전기 방지 봉투에 추가 포장, 봉인 스티커 서명/날짜 기입 및 촬영.",
         "caution": "운반 중 충격, 고온, 자기장 노출 주의.",
         "variants": {
@@ -385,7 +474,7 @@ IPHONE_STEPS = COMMON_PRE_STEPS + [
         },
     },
     {
-        "title": "8. 증거물 목록 및 인수인계 기록 작성",
+        "title": "증거물 목록 및 인수인계 기록 작성",
         "detail": "- 압수물 목록과 Chain of Custody 문서를 작성한다.",
         "caution": "모든 접촉/이동 이력을 빠짐없이 기록한다.",
         "variants": {
@@ -408,7 +497,7 @@ IPHONE_STEPS = COMMON_PRE_STEPS + [
 
 ANDROID_STEPS = COMMON_PRE_STEPS + [
     {
-        "title": "2. 전원 상태 확인 및 네트워크·배터리 보존",
+        "title": "전원 상태 확인 및 네트워크·배터리 보존",
         "detail": (
             "[전원/화면 상태]\n"
             "- 화면 켜짐/꺼짐, 잠금 여부를 확인하고 촬영한다.\n"
@@ -427,7 +516,7 @@ ANDROID_STEPS = COMMON_PRE_STEPS + [
         ),
     },
     {
-        "title": "3. 기기 식별 및 보안상태 확인 (포렌식 분석관과 공동 진행)",
+        "title": "기기 식별 및 보안상태 확인 (포렌식 분석관과 공동 진행)",
         "detail": (
             "이 단계는 전문적인 기술 판단이 포함되어 있어 현장 수사관 단독으로\n"
             "진행하기 어렵다. 압수 현장에 동행한 포렌식 분석관과 함께 아래 항목을\n"
@@ -451,7 +540,7 @@ ANDROID_STEPS = COMMON_PRE_STEPS + [
         },
     },
     {
-        "title": "4. 현장 이미지 추출 여부 결정",
+        "title": "현장 이미지 추출 여부 결정",
         "type": "decision",
         "options": ["현장 즉시 이미지 추출", "압수 후 실험실 이송", "보류 (책임자 추가 판단 필요)"],
         "detail": (
@@ -486,7 +575,7 @@ ANDROID_STEPS = COMMON_PRE_STEPS + [
         },
     },
     {
-        "title": "5. 잠금해제/복호화 - 전문 추출팀 인계 체크리스트",
+        "title": "잠금해제/복호화 - 전문 추출팀 인계 체크리스트",
         "detail": (
             "실제 잠금해제·복호화 작업은 공인 장비(Cellebrite, MSAB XRY 등)와\n"
             "자격을 갖춘 전문 추출팀만 수행한다. 현장 담당자는 아래 정보를\n"
@@ -525,11 +614,11 @@ ANDROID_STEPS = COMMON_PRE_STEPS + [
         },
     },
     {
-        "title": "6. 전문 추출팀 인계",
+        "title": "전문 추출팀 인계",
         "detail": (
             "- 공인 모바일 포렌식 장비를 보유한 전문 인력에게 법적 절차에 따라\n"
             "  인계한다.\n"
-            "- 위 체크리스트와 4단계에서 선택한 처리 방식(현장 추출/실험실 이송)을\n"
+            "- 위 체크리스트와 앞선 '현장 이미지 추출 여부 결정' 단계에서 선택한 처리 방식을\n"
             "  함께 전달한다."
         ),
         "caution": "비전문 인력의 임의 추출 시도는 증거능력을 저해할 수 있다.",
@@ -559,13 +648,13 @@ ANDROID_STEPS = COMMON_PRE_STEPS + [
             ),
             "보류 (책임자 추가 판단 필요)": (
                 "[보류] 아직 인계 대상이 정해지지 않았으므로 이 단계는 보류한다.\n"
-                "책임자의 결정이 내려오면 4단계로 돌아가 선택을 변경한 뒤 다시\n"
+                "책임자의 결정이 내려오면 앞선 결정 단계로 돌아가 선택을 변경한 뒤 다시\n"
                 "진행한다."
             ),
         },
     },
     {
-        "title": "7. 증거물 포장 및 봉인",
+        "title": "증거물 포장 및 봉인",
         "detail": "- 정전기 방지 봉투/페러데이백 포장 후 봉인 스티커 서명/날짜 기입.",
         "caution": "운반 중 충격, 고온 주의.",
         "variants": {
@@ -585,7 +674,7 @@ ANDROID_STEPS = COMMON_PRE_STEPS + [
         },
     },
     {
-        "title": "8. 증거물 목록 및 인수인계 기록 작성",
+        "title": "증거물 목록 및 인수인계 기록 작성",
         "detail": "- 압수물 목록과 Chain of Custody 문서를 작성한다.",
         "caution": "모든 접촉/이동 이력을 빠짐없이 기록한다.",
         "variants": {
@@ -607,6 +696,17 @@ ANDROID_STEPS = COMMON_PRE_STEPS + [
 ]
 
 DEVICE_STEPS = {"PC": PC_STEPS, "iPhone": IPHONE_STEPS, "Android": ANDROID_STEPS}
+
+
+def get_full_steps(device_type):
+    """1번 단계(기기 유형 선택) + (선택된 경우) 기기별 단계를 하나의 리스트로
+    합쳐 반환한다. DEVICE_STEPS[device_type]에는 공통 사전단계(COMMON_PRE_STEPS)가
+    이미 포함되어 있으므로 여기서 따로 더하지 않는다. device_type이 아직 없으면
+    1번 단계만 온다."""
+    steps = [DEVICE_SELECT_STEP]
+    if device_type:
+        steps = steps + DEVICE_STEPS[device_type]
+    return steps
 
 # ---------------------------------------------------------------------------
 # 현장 수행 주체 및 보유 포렌식 도구
@@ -643,6 +743,27 @@ def get_selected_decision(steps, records):
                 return val
     return None
 
+
+def get_decision_step_index(steps):
+    for i, s in enumerate(steps):
+        if s.get("type") == "decision":
+            return i
+    return None
+
+
+def get_effective_last_index(steps, records, role):
+    """수사관이 '현장 즉시 이미지 추출'을 선택하면, 이후 작업은 모두 포렌식
+    담당자가 전담하므로 수사관의 절차는 결정 단계에서 종료된다. 그 외에는
+    (압수 후 이송을 선택해 증거물 포장·봉인에 계속 참여하는 경우 포함) 마지막
+    단계까지 정상 진행한다."""
+    decision_idx = get_decision_step_index(steps)
+    if decision_idx is None:
+        return len(steps) - 1
+    decision_value = records.get(decision_idx, {}).get("decision")
+    if role == "수사관" and decision_value == "현장 즉시 이미지 추출":
+        return decision_idx
+    return len(steps) - 1
+
 # ---------------------------------------------------------------------------
 # Streamlit 앱
 # ---------------------------------------------------------------------------
@@ -667,8 +788,8 @@ def init_state():
 def render_start():
     st.title("현장 압수 절차")
     st.caption(
-        "현장 보존 절차를 단계별로 안내합니다. 먼저 사건 정보를 입력한 뒤 "
-        "수행 주체와 압수 대상 기기 유형을 선택하세요."
+        "현장 보존 절차를 단계별로 안내합니다. 먼저 사건 정보와 수행 주체를 "
+        "입력하세요. 압수 대상 기기 유형은 1단계에서 선택합니다."
     )
 
     with st.form("case_info_form"):
@@ -686,7 +807,6 @@ def render_start():
             horizontal=True,
             help="수사관: 현장 보존·협의 중심 절차. 포렌식분석관: 본인이 직접 기술 항목과 추출 작업을 수행하는 절차.",
         )
-        device_type = st.radio("압수 대상 기기 유형", ["PC", "iPhone", "Android"], horizontal=True)
         submitted = st.form_submit_button("절차 안내 시작 ▶")
 
     if submitted:
@@ -697,14 +817,10 @@ def render_start():
             "현장 위치": location,
             "압수 일시": seized_at,
         }
-        st.session_state.device_type = device_type
+        st.session_state.device_type = None  # 1단계에서 선택
         st.session_state.role = role
         st.session_state.current_index = 0
-        steps = DEVICE_STEPS[device_type]
-        st.session_state.records = {
-            i: {"done": False, "note": "", "photos": [], "decision": None, "tool": None}
-            for i in range(len(steps))
-        }
+        st.session_state.records = {}
         st.session_state.stage = "guide"
         st.rerun()
 
@@ -764,7 +880,7 @@ def _esc(text):
 def build_pdf_bytes():
     device_type = st.session_state.device_type
     role = st.session_state.role
-    steps = DEVICE_STEPS[device_type]
+    steps = get_full_steps(device_type)
     records = st.session_state.records
 
     font_name = ensure_korean_font_registered()
@@ -816,11 +932,21 @@ def build_pdf_bytes():
     story.append(HRFlowable(width="100%", color=colors.HexColor("#999999")))
 
     selected_decision = get_selected_decision(steps, records)
+    default_rec = {"done": False, "note": "", "photos": [], "decision": None, "tool": None}
 
     for i, step in enumerate(steps):
-        rec = records[i]
+        rec = records.get(i, default_rec)
         status = "[완료]" if rec["done"] else "[미완료]"
-        story.append(Paragraph(f"{status} {_esc(step['title'])}", styles["step_title"]))
+        story.append(Paragraph(f"{status} {i + 1}. {_esc(step['title'])}", styles["step_title"]))
+
+        if step.get("type") == "device_select":
+            story.append(Paragraph(_esc(step["detail"]).replace("\n", "<br/>"), styles["body"]))
+            story.append(Spacer(1, 3))
+            story.append(Paragraph(f"▶ 선택된 기기 유형: {_esc(device_type or '-')}", styles["decision"]))
+            story.append(Spacer(1, 4))
+            story.append(HRFlowable(width="100%", color=colors.HexColor("#dddddd")))
+            continue
+
         detail_text, caution_text = get_role_text(step, role)
         story.append(Paragraph(_esc(detail_text).replace("\n", "<br/>"), styles["body"]))
 
@@ -904,17 +1030,32 @@ def build_pdf_bytes():
     return buffer.getvalue()
 
 
-def render_guide():
-    device_type = st.session_state.device_type
-    role = st.session_state.role
-    steps = DEVICE_STEPS[device_type]
-    idx = st.session_state.current_index
-    step = steps[idx]
-    rec = st.session_state.records[idx]
+def get_record(idx):
+    """전역 단계 인덱스에 대한 기록을 반환한다. 없으면 기본값으로 만든다.
+    (1단계에서 기기 유형을 고르기 전에는 기기별 단계가 아직 존재하지 않으므로
+    필요한 시점에 그때그때 생성한다.)"""
+    if idx not in st.session_state.records:
+        st.session_state.records[idx] = {
+            "done": False, "note": "", "photos": [], "decision": None, "tool": None,
+        }
+    return st.session_state.records[idx]
 
+
+def render_guide():
+    role = st.session_state.role
+    device_type = st.session_state.device_type
+    steps = get_full_steps(device_type)
+    idx = st.session_state.current_index
+    idx = min(idx, len(steps) - 1)  # 기기 유형이 아직 없을 때 범위를 벗어나지 않도록
+    st.session_state.current_index = idx
+    step = steps[idx]
+    rec = get_record(idx)
+
+    header = f"[{device_type} · {role}]" if device_type else f"[{role}]"
     top_l, top_r = st.columns([4, 1])
     with top_l:
-        st.title(f"[{device_type} · {role}] 현장 압수 절차")
+        st.title("현장 압수 절차")
+        st.caption(header)
     with top_r:
         if st.button("처음으로"):
             st.session_state.stage = "start"
@@ -922,70 +1063,99 @@ def render_guide():
 
     st.progress((idx + 1) / len(steps), text=f"{idx + 1} / {len(steps)} 단계")
 
-    st.subheader(step["title"])
-    detail_text, caution_text = get_role_text(step, role)
-    st.markdown(detail_text.replace("\n", "  \n"))
-    if caution_text:
-        st.warning(f"⚠ 주의: {caution_text}")
+    st.subheader(f"{idx + 1}. {step['title']}")
 
-    if step.get("tool_select") and role == "포렌식분석관":
-        tool_options = TOOLS_BY_DEVICE.get(device_type, [])
-        current_tool = rec.get("tool")
-        tool_index = tool_options.index(current_tool) if current_tool in tool_options else None
-        chosen_tool = st.selectbox(
-            "사용 장비 선택 (보유 포렌식 도구)",
-            tool_options,
-            index=tool_index,
-            key=f"tool_{idx}",
-            placeholder="도구를 선택하세요",
-        )
-        rec["tool"] = chosen_tool
-
-    if step.get("variants"):
-        selected_decision = get_selected_decision(steps, st.session_state.records)
-        if selected_decision:
-            variant_text = step["variants"].get(selected_decision)
-            if variant_text:
-                st.info(variant_text.replace("\n", "  \n"))
-        else:
-            st.caption("ℹ️ 앞선 '현장 이미지 추출 여부 결정' 단계에서 선택하면 이 단계 안내가 그에 맞게 표시됩니다.")
-
-    if step.get("type") == "decision":
-        options = step["options"]
-        current = rec.get("decision")
+    if step.get("type") == "device_select":
+        st.markdown(step["detail"].replace("\n", "  \n"))
+        if step.get("caution"):
+            st.warning(f"⚠ 주의: {step['caution']}")
+        options = ["PC", "iPhone", "Android"]
+        current = device_type
         default_index = options.index(current) if current in options else None
-        choice = st.radio(
-            "현장 결정",
-            options,
-            index=default_index,
-            key=f"decision_{idx}",
-        )
-        rec["decision"] = choice
-        if choice:
-            branch_text = step.get("branch_info", {}).get(choice)
-            if branch_text:
-                st.success(branch_text.replace("\n", "  \n"))
-
-    rec["done"] = st.checkbox("이 단계를 완료했습니다", value=rec["done"], key=f"done_{idx}")
-    rec["note"] = st.text_area("현장 메모", value=rec["note"], key=f"note_{idx}", height=100)
-
-    st.markdown("**📷 현장 사진**")
-    uploaded_photos = st.file_uploader(
-        "사진 추가 (여러 장 선택 가능, 이미 올린 사진은 목록에서 x로 삭제 가능)",
-        type=["png", "jpg", "jpeg", "heic"],
-        accept_multiple_files=True,
-        key=f"photos_{idx}",
-    )
-    rec["photos"] = uploaded_photos or []
-
-    if rec["photos"]:
-        st.caption(f"이 단계에 첨부된 사진: {len(rec['photos'])}장")
-        thumb_cols = st.columns(3)
-        for p_idx, photo in enumerate(rec["photos"]):
-            with thumb_cols[p_idx % 3]:
-                st.image(photo, caption=photo.name, width="stretch")
+        choice = st.radio("기기 유형", options, index=default_index, horizontal=True, key="device_select_radio")
+        if choice != st.session_state.device_type:
+            st.session_state.device_type = choice
+            # 기기 유형이 바뀌면 기기별 단계 기록은 초기화한다 (앞의 공통 단계 기록은 유지)
+            keep = {0}  # 유형 선택 단계 자체
+            for i in range(1, len(COMMON_PRE_STEPS) + 1):
+                keep.add(i)
+            st.session_state.records = {k: v for k, v in st.session_state.records.items() if k in keep}
+            st.rerun()
+        device_type = st.session_state.device_type
     else:
-        st.caption("아직 첨부된 사진이 없습니다.")
+        detail_text, caution_text = get_role_text(step, role)
+        st.markdown(detail_text.replace("\n", "  \n"))
+        if caution_text:
+            st.warning(f"⚠ 주의: {caution_text}")
+
+        if step.get("tool_select") and role == "포렌식분석관":
+            tool_options = TOOLS_BY_DEVICE.get(device_type, [])
+            current_tool = rec.get("tool")
+            tool_index = tool_options.index(current_tool) if current_tool in tool_options else None
+            chosen_tool = st.selectbox(
+                "사용 장비 선택 (보유 포렌식 도구)",
+                tool_options,
+                index=tool_index,
+                key=f"tool_{idx}",
+                placeholder="도구를 선택하세요",
+            )
+            rec["tool"] = chosen_tool
+
+        if step.get("variants"):
+            selected_decision = get_selected_decision(steps, st.session_state.records)
+            if selected_decision:
+                variant_text = step["variants"].get(selected_decision)
+                if variant_text:
+                    st.info(variant_text.replace("\n", "  \n"))
+            else:
+                st.caption("ℹ️ 앞선 '현장 이미지 추출 여부 결정' 단계에서 선택하면 이 단계 안내가 그에 맞게 표시됩니다.")
+
+        if step.get("type") == "decision":
+            options = step["options"]
+            current = rec.get("decision")
+            default_index = options.index(current) if current in options else None
+            choice = st.radio(
+                "현장 결정",
+                options,
+                index=default_index,
+                key=f"decision_{idx}",
+            )
+            rec["decision"] = choice
+            if choice:
+                branch_text = step.get("branch_info", {}).get(choice)
+                if branch_text:
+                    st.success(branch_text.replace("\n", "  \n"))
+                if role == "수사관" and choice == "현장 즉시 이미지 추출":
+                    st.warning(
+                        "🧑‍💼 현장 즉시 이미지 추출이 선택되었습니다. 수사관의 역할은 "
+                        "여기서 끝나며, 이후 추출 작업은 포렌식 담당자가 전담합니다. "
+                        "수사관은 아래에서 지금까지의 리포트를 다운로드할 수 있습니다."
+                    )
+
+        rec["done"] = st.checkbox("이 단계를 완료했습니다", value=rec["done"], key=f"done_{idx}")
+        rec["note"] = st.text_area("현장 메모", value=rec["note"], key=f"note_{idx}", height=100)
+
+        st.markdown("**📷 현장 사진**")
+        uploaded_photos = st.file_uploader(
+            "사진 추가 (여러 장 선택 가능, 이미 올린 사진은 목록에서 x로 삭제 가능)",
+            type=["png", "jpg", "jpeg", "heic"],
+            accept_multiple_files=True,
+            key=f"photos_{idx}",
+        )
+        rec["photos"] = uploaded_photos or []
+
+        if rec["photos"]:
+            st.caption(f"이 단계에 첨부된 사진: {len(rec['photos'])}장")
+            thumb_cols = st.columns(3)
+            for p_idx, photo in enumerate(rec["photos"]):
+                with thumb_cols[p_idx % 3]:
+                    st.image(photo, caption=photo.name, width="stretch")
+        else:
+            st.caption("아직 첨부된 사진이 없습니다.")
+
+    # 모든 단계 내용(특히 결정 라디오 처리)이 끝난 뒤에 계산해야 이번 렌더링에서
+    # 방금 선택한 결정값이 바로 반영된다.
+    effective_last = get_effective_last_index(steps, st.session_state.records, role)
 
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -993,61 +1163,70 @@ def render_guide():
             st.session_state.current_index -= 1
             st.rerun()
     with col2:
-        if idx < len(steps) - 1:
-            if st.button("다음 단계 ▶"):
+        can_advance = idx < len(steps) - 1 and idx < effective_last
+        device_missing = step.get("type") == "device_select" and not device_type
+        if can_advance:
+            if st.button("다음 단계 ▶", disabled=device_missing):
                 st.session_state.current_index += 1
                 st.rerun()
+            if device_missing:
+                st.caption("기기 유형을 선택하면 다음 단계로 진행할 수 있습니다.")
+        elif idx == effective_last and idx < len(steps) - 1:
+            st.success("수사관 역할은 여기까지입니다. 아래에서 리포트를 다운로드하세요.")
         else:
             st.success("마지막 단계입니다. 아래에서 리포트를 다운로드하세요.")
     with col3:
         pass
 
-    st.divider()
-    st.markdown("### 📄 리포트 다운로드")
-    file_tag = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    total_photos = sum(len(st.session_state.records[i].get("photos") or []) for i in range(len(steps)))
+    if device_type:
+        st.divider()
+        st.markdown("### 📄 리포트 다운로드")
+        file_tag = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        total_photos = sum(len(st.session_state.records.get(i, {}).get("photos") or []) for i in range(len(steps)))
 
-    if not get_korean_font_path():
-        st.warning(
-            "한글 폰트를 찾지 못했습니다. Windows에서는 보통 자동으로 잡히지만, "
-            "다른 OS에서는 app.py와 같은 폴더에 fonts/NanumGothic.ttf 를 넣어주세요. "
-            "폰트가 없어도 PDF는 생성되지만 한글이 깨져 보일 수 있습니다."
-        )
-
-    dcol1, dcol2 = st.columns(2)
-    with dcol1:
-        pdf_bytes = build_pdf_bytes()
-        st.download_button(
-            "PDF 리포트 다운로드",
-            data=pdf_bytes,
-            file_name=f"forensic_report_{device_type}_{file_tag}.pdf",
-            mime="application/pdf",
-        )
-    with dcol2:
-        if total_photos > 0:
-            zip_buffer = io.BytesIO()
-            with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
-                for i in range(len(steps)):
-                    photos = st.session_state.records[i].get("photos") or []
-                    step_folder = f"{i:02d}_{steps[i]['title'][:20]}".replace("/", "-")
-                    for photo in photos:
-                        photo.seek(0)
-                        zf.writestr(f"{step_folder}/{photo.name}", photo.read())
-            st.download_button(
-                f"사진 원본 전체 ZIP ({total_photos}장)",
-                data=zip_buffer.getvalue(),
-                file_name=f"forensic_photos_{device_type}_{file_tag}.zip",
-                mime="application/zip",
+        if not get_korean_font_path():
+            st.warning(
+                "한글 폰트를 찾지 못했습니다. Windows에서는 보통 자동으로 잡히지만, "
+                "다른 OS에서는 app.py와 같은 폴더에 fonts/NanumGothic.ttf 를 넣어주세요. "
+                "폰트가 없어도 PDF는 생성되지만 한글이 깨져 보일 수 있습니다."
             )
-        else:
-            st.caption("첨부된 사진이 없습니다.")
 
-    with st.expander("전체 단계 한눈에 보기 / 바로 이동"):
-        for i, s in enumerate(steps):
-            mark = "✅" if st.session_state.records[i]["done"] else "⬜"
-            if st.button(f"{mark} {s['title']}", key=f"jump_{i}"):
-                st.session_state.current_index = i
-                st.rerun()
+        dcol1, dcol2 = st.columns(2)
+        with dcol1:
+            pdf_bytes = build_pdf_bytes()
+            st.download_button(
+                "PDF 리포트 다운로드",
+                data=pdf_bytes,
+                file_name=f"forensic_report_{device_type}_{file_tag}.pdf",
+                mime="application/pdf",
+            )
+        with dcol2:
+            if total_photos > 0:
+                zip_buffer = io.BytesIO()
+                with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+                    for i in range(len(steps)):
+                        photos = st.session_state.records.get(i, {}).get("photos") or []
+                        step_folder = f"{i:02d}_{steps[i]['title'][:20]}".replace("/", "-")
+                        for photo in photos:
+                            photo.seek(0)
+                            zf.writestr(f"{step_folder}/{photo.name}", photo.read())
+                st.download_button(
+                    f"사진 원본 전체 ZIP ({total_photos}장)",
+                    data=zip_buffer.getvalue(),
+                    file_name=f"forensic_photos_{device_type}_{file_tag}.zip",
+                    mime="application/zip",
+                )
+            else:
+                st.caption("첨부된 사진이 없습니다.")
+
+        with st.expander("전체 단계 한눈에 보기 / 바로 이동"):
+            for i, s in enumerate(steps):
+                mark = "✅" if st.session_state.records.get(i, {}).get("done") else "⬜"
+                locked = i > effective_last
+                label = f"{mark} {i + 1}. {s['title']}" + (" 🔒" if locked else "")
+                if st.button(label, key=f"jump_{i}", disabled=locked):
+                    st.session_state.current_index = i
+                    st.rerun()
 
 
 def main():
