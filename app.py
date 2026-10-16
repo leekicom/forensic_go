@@ -785,25 +785,6 @@ def init_state():
 
 def render_start():
     st.title("현장 압수 절차")
-    st.caption(
-        "현장 보존 절차를 단계별로 안내합니다. 먼저 사건 정보와 수행 주체를 "
-        "입력하세요. 압수 대상 기기 유형은 1단계에서 선택합니다."
-    )
-
-    with st.expander("⚖️ 법령·판례 적용 시 필수 확인사항", expanded=True):
-        st.warning(
-            "이 앱은 현장 기록 보조 도구이며 법률 자문이나 기관 SOP를 대체하지 않습니다. "
-            "집행 전 영장 문언·대상·범위·기간 및 별도 제한을 확인하고, 관련 전자정보를 "
-            "선별하는 절차와 참여권·목록 교부 등 절차적 권리를 준수하십시오. "
-            "현장 이미징·복제본의 압수/보관/교부 여부는 일률적으로 단정하지 말고 "
-            "사건별 법적 근거와 책임자 판단을 기록하십시오."
-        )
-        st.markdown(
-            "참고 법령·판례: [국가법령정보센터 판례 검색](https://www.law.go.kr/precSc.do?menuId=7&query=%EC%95%95%EC%88%98%EC%88%98%EC%83%89&subMenuId=47&tabMenuId=213) "
-            "· [대법원 2025. 8. 14. 선고 2022도11923 판결 관련 검색](https://www.law.go.kr/precSc.do?query=2022%EB%8F%8411923) "
-            "· [디지털 포렌식 업무 규정 예시(공수처)](https://www.law.go.kr/LSW/admRulInfoP.do?admRulSeq=2100000234582&chrClsCd=010201)\n\n"
-            "※ 기관별 적용 규정과 최신 개정 여부를 공식 원문에서 다시 확인하십시오."
-        )
 
     with st.form("case_info_form"):
         case_number = st.text_input("사건번호")
