@@ -77,6 +77,35 @@ def ensure_korean_font_registered():
 
 APP_TITLE = "현장 압수 절차 포렌식 매뉴얼 (Digital Forensics Seizure Guide)"
 
+def format_guide_text(text):
+    """문장 중간의 소스 줄바꿈은 합치고, 제목·목록·문단 경계만 유지한다.
+
+    모바일 화면에서 '차단을 / 검토한다'처럼 한 문장이 불필요하게
+    끊겨 보이지 않도록 안내 문구 전반에 적용한다.
+    """
+    blocks = []
+    current = []
+    for raw_line in str(text or "").splitlines():
+        line = raw_line.strip()
+        if not line:
+            if current:
+                blocks.append(current)
+                current = []
+            continue
+        is_new_item = (
+            line.startswith(("- ", "[", "→ "))
+            or line == "판단 기준:"
+        )
+        if is_new_item:
+            current.append(line)
+        elif current:
+            current[-1] += " " + line
+        else:
+            current.append(line)
+    if current:
+        blocks.append(current)
+    return "\n\n".join("  \n".join(block) for block in blocks)
+
 # ---------------------------------------------------------------------------
 # 절차 데이터
 # ---------------------------------------------------------------------------
@@ -801,6 +830,26 @@ def get_visible_step_indices(steps, records, role):
 
 st.set_page_config(page_title=APP_TITLE, page_icon="🔎", layout="centered")
 
+st.markdown(
+    """
+    <style>
+    /* 모바일에서 한글 단어가 중간에서 갈라지지 않도록 하고 제목 크기를 조정 */
+    .stMarkdown, .stAlert, [data-testid="stCaptionContainer"] {
+        word-break: keep-all;
+        overflow-wrap: break-word;
+    }
+    @media (max-width: 640px) {
+        .block-container { padding-left: 1rem; padding-right: 1rem; }
+        h1 { font-size: 1.65rem !important; line-height: 1.3 !important; }
+        h2 { font-size: 1.25rem !important; line-height: 1.4 !important; }
+        h3 { font-size: 1.1rem !important; line-height: 1.4 !important; }
+        .stButton button { min-height: 2.8rem; white-space: normal; }
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 
 def init_state():
     defaults = {
@@ -1108,7 +1157,7 @@ def render_guide():
     st.subheader(f"{visible_position + 1}. {step['title']}")
 
     if step.get("type") == "device_select":
-        st.markdown(step["detail"].replace("\n", "  \n"))
+        st.markdown(format_guide_text(step["detail"]))
         if step.get("caution"):
             st.warning(f"⚠ 주의: {step['caution']}")
         options = ["PC", "iPhone", "Android"]
@@ -1125,7 +1174,7 @@ def render_guide():
         device_type = st.session_state.device_type
     else:
         detail_text, caution_text = get_role_text(step, role)
-        st.markdown(detail_text.replace("\n", "  \n"))
+        st.markdown(format_guide_text(detail_text))
         if caution_text:
             st.warning(f"⚠ 주의: {caution_text}")
 
@@ -1147,7 +1196,7 @@ def render_guide():
             if selected_decision:
                 variant_text = step["variants"].get(selected_decision)
                 if variant_text:
-                    st.info(variant_text.replace("\n", "  \n"))
+                    st.info(format_guide_text(variant_text))
             else:
                 st.caption("ℹ️ 앞선 '현장 이미지 추출 여부 결정' 단계에서 선택하면 이 단계 안내가 그에 맞게 표시됩니다.")
 
@@ -1165,7 +1214,7 @@ def render_guide():
             if choice:
                 branch_text = step.get("branch_info", {}).get(choice)
                 if branch_text:
-                    st.success(branch_text.replace("\n", "  \n"))
+                    st.success(format_guide_text(branch_text))
                 if role == "수사관" and choice == "현장 즉시 이미지 추출":
                     st.warning(
                         "🧑‍💼 현장 즉시 이미지 추출이 선택되었습니다. 수사관의 역할은 "
