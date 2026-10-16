@@ -698,13 +698,19 @@ DEVICE_STEPS = {"PC": PC_STEPS, "iPhone": IPHONE_STEPS, "Android": ANDROID_STEPS
 
 
 def get_full_steps(device_type):
-    """1번 단계(기기 유형 선택) + (선택된 경우) 기기별 단계를 하나의 리스트로
-    합쳐 반환한다. DEVICE_STEPS[device_type]에는 공통 사전단계(COMMON_PRE_STEPS)가
-    이미 포함되어 있으므로 여기서 따로 더하지 않는다. device_type이 아직 없으면
-    1번 단계만 온다."""
-    steps = [DEVICE_SELECT_STEP]
+    """현장 안전·권한 확인 후 기기 유형을 선택하고, 사진 기록과 기기별 절차를 이어서 반환한다.
+
+    기기 유형을 아직 선택하지 않은 경우에는 사전 확인과 유형 선택까지만 표시한다.
+    """
+    safety_step = COMMON_PRE_STEPS[0]
+    photo_step = COMMON_PRE_STEPS[1]
+    steps = [safety_step, DEVICE_SELECT_STEP]
     if device_type:
-        steps = steps + DEVICE_STEPS[device_type]
+        # 공통 사전단계 중 안전·권한 확인은 이미 첫 단계에 배치했으므로,
+        # 기기별 목록에서는 사진 기록 이후의 기기별 단계만 덧붙인다.
+        device_specific_steps = DEVICE_STEPS[device_type][len(COMMON_PRE_STEPS):]
+        steps.extend([photo_step])
+        steps.extend(device_specific_steps)
     return steps
 
 # ---------------------------------------------------------------------------
@@ -751,16 +757,9 @@ def get_decision_step_index(steps):
 
 
 def get_effective_last_index(steps, records, role):
-    """수사관이 '현장 즉시 이미지 추출'을 선택하면, 이후 작업은 모두 포렌식
-    담당자가 전담하므로 수사관의 절차는 결정 단계에서 종료된다. 그 외에는
-    (압수 후 이송을 선택해 증거물 포장·봉인에 계속 참여하는 경우 포함) 마지막
-    단계까지 정상 진행한다."""
-    decision_idx = get_decision_step_index(steps)
-    if decision_idx is None:
-        return len(steps) - 1
-    decision_value = records.get(decision_idx, {}).get("decision")
-    if role == "수사관" and decision_value == "현장 즉시 이미지 추출":
-        return decision_idx
+    """수사관은 4단계까지 진행하고, 이후의 기술적 절차는 포렌식분석관이 수행한다."""
+    if role == "수사관":
+        return min(3, len(steps) - 1)
     return len(steps) - 1
 
 # ---------------------------------------------------------------------------
@@ -831,7 +830,7 @@ def render_start():
             "현장 위치": location,
             "압수 일시": seized_at,
         }
-        st.session_state.device_type = None  # 1단계에서 선택
+        st.session_state.device_type = None  # 현장 안전·권한 확인 후 기기 유형 선택
         st.session_state.role = role
         st.session_state.current_index = 0
         st.session_state.records = {}
@@ -1094,10 +1093,9 @@ def render_guide():
         choice = st.radio("기기 유형", options, index=default_index, horizontal=True, key="device_select_radio")
         if choice != st.session_state.device_type:
             st.session_state.device_type = choice
-            # 기기 유형이 바뀌면 기기별 단계 기록은 초기화한다 (앞의 공통 단계 기록은 유지)
-            keep = {0}  # 유형 선택 단계 자체
-            for i in range(1, len(COMMON_PRE_STEPS) + 1):
-                keep.add(i)
+            # 기기 유형 변경 시 안전·권한 확인과 유형 선택 기록만 유지한다.
+            # 사진 기록 및 기기별 단계 기록은 새 기기에 맞게 초기화한다.
+            keep = {0, 1}
             st.session_state.records = {k: v for k, v in st.session_state.records.items() if k in keep}
             st.rerun()
         device_type = st.session_state.device_type
@@ -1191,7 +1189,7 @@ def render_guide():
             if device_missing:
                 st.caption("기기 유형을 선택하면 다음 단계로 진행할 수 있습니다.")
         elif idx == effective_last and idx < len(steps) - 1:
-            st.success("수사관 역할은 여기까지입니다. 아래에서 리포트를 다운로드하세요.")
+            st.success("수사관 절차는 4단계까지입니다. 이후 기술적 절차는 포렌식분석관이 이어서 수행합니다. 아래에서 리포트를 다운로드하세요.")
         else:
             st.success("마지막 단계입니다. 아래에서 리포트를 다운로드하세요.")
     with col3:
