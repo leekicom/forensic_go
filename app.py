@@ -75,7 +75,7 @@ def ensure_korean_font_registered():
     except Exception:
         return None
 
-APP_TITLE = "현장 압수 절차 안내"
+APP_TITLE = "현장 압수 절차 안내 (Digital Forensics Seizure Guide)"
 
 # ---------------------------------------------------------------------------
 # 절차 데이터 (tkinter 버전과 동일)
@@ -103,60 +103,89 @@ COMMON_PRE_STEPS = [
 
 PC_STEPS = COMMON_PRE_STEPS + [
     {
-        "title": "2. 전원 상태 확인",
+        "title": "2. 전원 상태 확인 및 네트워크 차단 검토",
         "detail": (
+            "[전원 상태]\n"
             "- 모니터 화면과 본체 상태(LED, 팬 소음 등)로 전원 ON/OFF를 확인한다.\n"
-            "- 화면이 켜져 있다면 현재 실행 중인 프로그램/화면을 그대로 촬영한다."
+            "- 화면이 켜져 있다면 현재 실행 중인 프로그램/화면을 그대로 촬영한다.\n\n"
+            "[네트워크 차단 검토]\n"
+            "- 원격 삭제/암호화/동기화를 막기 위해 랜케이블 분리, Wi-Fi 차단을\n"
+            "  검토한다.\n"
+            "- 휘발성 데이터(RAM) 수집이 필요한 경우, 네트워크 차단 시점과 방법을\n"
+            "  미리 정한다."
         ),
-        "caution": "전원이 꺼져 있다면 절대 켜지 않는다. 켜져 있다면 임의로 끄지 않는다.",
+        "caution": (
+            "전원이 꺼져 있다면 절대 켜지 않는다. 켜져 있다면 임의로 끄지 않는다. "
+            "네트워크 차단이 오히려 증거를 훼손할 수 있는 경우도 있으니 사전 "
+            "교육된 절차를 따른다."
+        ),
     },
     {
-        "title": "3. 네트워크 연결 차단 검토",
-        "detail": (
-            "- 원격 삭제/암호화/동기화를 막기 위해 랜케이블 분리, Wi-Fi 차단을 검토한다.\n"
-            "- 휘발성 데이터(RAM) 수집이 필요한 경우, 기관 SOP에 따라 네트워크\n"
-            "  차단 시점과 방법을 사전 결정한다."
-        ),
-        "caution": "네트워크 차단이 오히려 증거를 훼손할 수 있는 경우도 있으니 사전 교육된 절차를 따른다.",
-    },
-    {
-        "title": "4. 휘발성 메모리(RAM) 수집 여부 판단",
+        "title": "3. 휘발성 메모리(RAM) 수집 판단 및 저장매체 식별",
         "detail": (
             "- 기기가 켜져 있고 암호화(BitLocker 등)가 의심되는 경우, RAM 이미징을\n"
-            "  통한 복호화 키 확보를 기관 지침에 따라 검토한다.\n"
-            "- RAM 수집은 공인된 도구와 절차로 전문 인력이 수행한다."
+            "  통한 복호화 키 확보가 필요한지 판단한다.\n"
+            "- HDD/SSD/M.2 등 저장매체 모델명, 용량, 일련번호를 식별·기록한다."
         ),
         "caution": "비전문 인력이 임의 프로그램을 설치/실행하면 증거가 훼손될 수 있다.",
+        "role_override": {
+            "수사관": {
+                "detail": (
+                    "- 기기가 켜져 있고 암호화가 의심되는 경우, RAM 수집이 필요한지는\n"
+                    "  동행한 포렌식 분석관과 협의하여 판단한다.\n"
+                    "- 저장매체(HDD/SSD/M.2 등) 식별도 분석관과 함께 확인한다.\n"
+                    "- 수사관 단독으로 RAM 수집 도구를 설치/실행하지 않는다."
+                ),
+            },
+            "포렌식분석관": {
+                "detail": (
+                    "- 기기가 켜져 있고 암호화(BitLocker 등)가 의심되는 경우, RAM\n"
+                    "  이미징을 통한 복호화 키 확보 필요 여부를 직접 판단한다.\n"
+                    "- RAM 수집이 필요하면 보유 장비로 직접 수행한다.\n"
+                    "- 저장매체 모델명, 용량, 일련번호를 식별·기록한다."
+                ),
+            },
+        },
     },
     {
-        "title": "5. 전원 차단 및 케이블 라벨링",
+        "title": "4. 전원 차단, 케이블 라벨링 및 쓰기방지장치 준비",
         "detail": (
             "- 휘발성 수집이 끝났거나 불필요하다면, 전원 케이블을 직접 뽑아 안전하게\n"
             "  종료한다(정상 종료 대신 플러그 분리를 권장하는 기관 지침이 많음).\n"
-            "- 모든 케이블에 라벨을 붙이고 연결 위치를 사진으로 남긴 뒤 분리한다."
-        ),
-        "caution": "노트북은 배터리도 함께 분리하거나 전원이 완전히 차단되었는지 확인한다.",
-    },
-    {
-        "title": "6. 저장매체 식별 및 쓰기방지장치 준비",
-        "detail": (
-            "- HDD/SSD/M.2 등 저장매체 모델명, 용량, 일련번호를 기록한다.\n"
+            "- 모든 케이블에 라벨을 붙이고 연결 위치를 사진으로 남긴 뒤 분리한다.\n"
             "- 이미징 시 반드시 쓰기방지장치(Write Blocker)를 사용하여 원본이\n"
-            "  변경되지 않도록 한다."
+            "  변경되지 않도록 준비한다."
         ),
-        "caution": "쓰기방지장치 없이 원본 저장매체를 PC에 직접 마운트하지 않는다.",
+        "caution": "노트북은 배터리도 함께 분리하거나 전원이 완전히 차단되었는지 확인한다. 쓰기방지장치 없이 원본 저장매체를 PC에 직접 마운트하지 않는다.",
     },
     {
-        "title": "7. 포렌식 이미징 및 해시값 기록",
+        "title": "5. 포렌식 이미징 및 해시값 기록",
         "detail": (
-            "- 공인 포렌식 이미징 도구(FTK Imager, EnCase 등)로 비트 단위 이미지를 생성한다.\n"
+            "- 공인 포렌식 이미징 도구로 비트 단위 이미지를 생성한다.\n"
             "- 이미징 전/후 SHA-256(또는 MD5) 해시값을 산출하여 원본과 사본의\n"
             "  무결성을 증명한다."
         ),
         "caution": "해시값이 다르면 반드시 원인을 기록하고 재시도한다.",
+        "tool_select": True,
+        "role_override": {
+            "수사관": {
+                "detail": (
+                    "- 포렌식 이미징은 동행한 포렌식 분석관이 보유 장비로 직접\n"
+                    "  수행한다. 수사관은 해시값과 사용 장비명을 전달받아 기록한다."
+                ),
+            },
+            "포렌식분석관": {
+                "detail": (
+                    "- 보유 장비 중 이 매체에 적합한 도구를 선택하여 비트 단위\n"
+                    "  이미지를 생성한다.\n"
+                    "- 이미징 전/후 SHA-256(또는 MD5) 해시값을 산출하여 원본과\n"
+                    "  사본의 무결성을 증명한다."
+                ),
+            },
+        },
     },
     {
-        "title": "8. 증거물 포장 및 봉인",
+        "title": "6. 증거물 포장 및 봉인",
         "detail": (
             "- 정전기 방지 봉투(Anti-static bag)에 저장매체를 담는다.\n"
             "- 봉인 스티커에 서명/날짜를 기입하고 봉인 상태를 사진으로 남긴다."
@@ -164,7 +193,7 @@ PC_STEPS = COMMON_PRE_STEPS + [
         "caution": "충격/자기장에 노출되지 않도록 운반에 유의한다.",
     },
     {
-        "title": "9. 증거물 목록 및 인수인계 기록 작성",
+        "title": "7. 증거물 목록 및 인수인계 기록 작성",
         "detail": (
             "- 압수물 목록(품명, 수량, 일련번호, 상태)을 작성한다.\n"
             "- Chain of Custody(증거보관연계) 문서에 담당자, 시각, 장소를 기록한다."
@@ -175,51 +204,61 @@ PC_STEPS = COMMON_PRE_STEPS + [
 
 IPHONE_STEPS = COMMON_PRE_STEPS + [
     {
-        "title": "2. 전원 및 잠금 상태 확인",
+        "title": "2. 전원 상태 확인 및 네트워크·배터리 보존",
         "detail": (
+            "[전원/잠금 상태]\n"
             "- 화면이 켜져 있는지, 잠금(Lock) 상태인지 확인하고 촬영한다.\n"
             "- 켜져 있다면 전원을 끄지 않는다(끄면 재부팅 후 암호화가 강화되어\n"
-            "  이후 접근이 더 어려워질 수 있다)."
-        ),
-        "caution": "꺼져 있던 기기라면 임의로 전원을 켜지 않는다.",
-    },
-    {
-        "title": "3. 원격 삭제/초기화 방지 (네트워크 차단)",
-        "detail": (
+            "  이후 접근이 더 어려워질 수 있다).\n\n"
+            "[네트워크 격리]\n"
             "- 'iPhone 찾기'를 통한 원격 삭제를 막기 위해 가능한 한 빨리\n"
             "  네트워크로부터 격리한다.\n"
             "- 방법: 페러데이백(Faraday bag)에 넣거나, 비행기 모드 전환,\n"
-            "  또는 SIM 제거를 기관 SOP에 따라 선택한다."
-        ),
-        "caution": "화면 조작이 필요한 경우, 조작 전후 과정을 반드시 촬영/기록한다.",
-    },
-    {
-        "title": "4. 배터리 방전 방지",
-        "detail": (
-            "- 기기 전원이 꺼지면 보호가 강화되어 접근이 어려워질 수 있으므로\n"
-            "  방전되지 않도록 한다.\n"
+            "  또는 SIM 제거를 기관 SOP에 따라 선택한다.\n\n"
+            "[배터리 방전 방지]\n"
             "- 페러데이백 전용 충전 케이블 또는 보조배터리를 사용한다."
         ),
-        "caution": "충전 중에도 네트워크 격리 상태가 유지되는지 확인한다.",
-    },
-    {
-        "title": "5. 기기 식별 정보 기록",
-        "detail": (
-            "- 모델명, iOS 버전, 일련번호/IMEI(화면/기기 라벨에서 확인 가능한\n"
-            "  범위), 연결된 Apple ID(화면에 노출된 경우)를 기록한다."
+        "caution": (
+            "꺼져 있던 기기라면 임의로 전원을 켜지 않는다. 화면 조작이 필요한 "
+            "경우 조작 전후 과정을 반드시 촬영/기록한다. 충전 중에도 네트워크 "
+            "격리 상태가 유지되는지 확인한다."
         ),
-        "caution": "잠금 해제를 시도하며 정보를 캐내려 하지 않는다. 화면에 보이는 정보만 기록한다.",
     },
     {
-        "title": "6. 현장 이미지 추출 여부 결정",
+        "title": "3. 기기 식별 및 보안상태 확인 (포렌식 분석관과 공동 진행)",
+        "detail": (
+            "이 단계는 전문적인 기술 판단이 포함되어 있어 현장 수사관 단독으로\n"
+            "진행하기 어렵다. 압수 현장에 동행한 포렌식 분석관과 함께 아래 항목을\n"
+            "협의하여 확인·기록한다.\n\n"
+            "- 모델명, iOS 버전, 일련번호/IMEI(화면/기기 라벨에서 확인 가능한 범위)\n"
+            "- Face ID / Touch ID 사용 여부\n"
+            "- 화면에 노출된 Apple ID / iCloud 계정 정보"
+        ),
+        "caution": (
+            "잠금 해제를 시도하며 정보를 캐내려 하지 않는다. 화면에 보이는 정보만 "
+            "기록하며, 판단이 어려운 항목은 동행한 포렌식 분석관의 의견에 따른다."
+        ),
+        "role_override": {
+            "포렌식분석관": {
+                "detail": (
+                    "- 모델명, iOS 버전, 일련번호/IMEI(화면/기기 라벨에서 확인 가능한\n"
+                    "  범위), Face ID/Touch ID 사용 여부, 화면에 노출된 Apple ID/\n"
+                    "  iCloud 계정 정보를 직접 확인·기록한다."
+                ),
+            },
+        },
+    },
+    {
+        "title": "4. 현장 이미지 추출 여부 결정",
         "type": "decision",
         "options": ["현장 즉시 이미지 추출", "압수 후 실험실 이송", "보류 (책임자 추가 판단 필요)"],
         "detail": (
-            "현장에서 전문 추출팀이 바로 이미지를 뜰지, 기기를 압수해 실험실로\n"
-            "옮긴 뒤 처리할지를 아래 기준으로 판단해 선택한다.\n\n"
+            "현장에서 바로 이미지를 뜰지, 기기를 압수해 실험실로 옮긴 뒤 처리할지를\n"
+            "아래 기준으로 판단해 선택한다. 동행한 포렌식 분석관과 협의하여\n"
+            "결정한다.\n\n"
             "판단 기준:\n"
             "- 시간 민감성: 배터리 소진, 자동 재잠금, 원격 삭제 위험이 임박했는가\n"
-            "- 현장 장비: 공인 추출 장비(Cellebrite 등)와 전문 인력이 현장에 있는가\n"
+            "- 현장 장비: 공인 추출 장비와 전문 인력이 현장에 있는가\n"
             "- 공간/환경: 전력, 차폐(페러데이백/차폐룸), 작업 테이블 등 여건이 되는가\n"
             "- 법적 권한 범위: 영장/동의 범위가 현장 추출까지 포함하는가\n"
             "- 증거 복잡성: 다수 기기·대용량 저장소 등으로 실험실 정밀 분석이\n"
@@ -228,9 +267,10 @@ IPHONE_STEPS = COMMON_PRE_STEPS + [
         "caution": "결정 권한은 현장 책임자(또는 기관 SOP가 지정한 담당자)에게 있다. 애매하면 '보류'를 선택하고 책임자 지시를 받는다.",
         "branch_info": {
             "현장 즉시 이미지 추출": (
-                "→ 전문 추출팀이 현장에서 공인 장비로 작업할 수 있도록 전력, 공간,\n"
-                "   네트워크 차폐 환경을 지원한다. 추출 시작/종료 시각, 사용 장비명,\n"
-                "   담당자를 기록한다."
+                "→ 전력, 공간, 네트워크 차폐 환경을 지원하며 공인 장비로 작업한다.\n"
+                "   추출 시작/종료 시각, 사용 장비명, 담당자를 기록한다. 추출된\n"
+                "   사본은 해시값을 출력해 그 자리에서 피의자(소지자)에게 고지하며,\n"
+                "   압수물로는 취급하지 않는다."
             ),
             "압수 후 실험실 이송": (
                 "→ 기기를 봉인하여 실험실로 이송한다. 이송 중에도 네트워크 격리와\n"
@@ -244,7 +284,7 @@ IPHONE_STEPS = COMMON_PRE_STEPS + [
         },
     },
     {
-        "title": "7. 잠금해제/복호화 - 전문 추출팀 인계 체크리스트",
+        "title": "5. 잠금해제/복호화 - 전문 추출팀 인계 체크리스트",
         "detail": (
             "실제 잠금해제·복호화 작업은 공인 장비(Cellebrite UFED, GrayKey 등)와\n"
             "자격을 갖춘 전문 추출팀만 수행한다. 현장 담당자는 아래 정보를\n"
@@ -275,22 +315,29 @@ IPHONE_STEPS = COMMON_PRE_STEPS + [
                 "두되, 전문팀 인계나 이송은 책임자 지시가 내려온 뒤 진행한다."
             ),
         },
+        "role_override": {
+            "포렌식분석관": {
+                "caution": "본인이 직접 공인 장비로 진행할 항목이므로, 위 정보를 스스로 확인·기록한 뒤 보유 장비로 작업을 시작한다.",
+            },
+        },
     },
     {
-        "title": "8. 전문 추출팀 인계",
+        "title": "6. 전문 추출팀 인계",
         "detail": (
             "- 법적 권한과 절차에 따라 공인 모바일 포렌식 장비를 보유한\n"
             "  전문 인력에게 인계한다.\n"
-            "- 위 체크리스트와 6단계에서 선택한 처리 방식(현장 추출/실험실 이송)을\n"
+            "- 위 체크리스트와 4단계에서 선택한 처리 방식(현장 추출/실험실 이송)을\n"
             "  함께 전달한다."
         ),
         "caution": "비전문 인력이 임의 소프트웨어로 추출을 시도하면 증거능력이 부정될 수 있다.",
+        "tool_select": True,
         "variants": {
             "현장 즉시 이미지 추출": (
                 "[현장 추출] 전문 추출팀이 현장에서 작업을 완료할 때까지 입회\n"
-                "하거나 대기 담당자를 지정한다. 작업 시작/종료 시각, 생성된\n"
-                "이미지 파일명, 산출된 해시값(SHA-256)을 전문팀으로부터 받아\n"
-                "기록한다. 작업 완료 후에도 원본 기기는 봉인하여 함께 보관한다."
+                "하거나 대기 담당자를 지정한다. 작업 종료 후 산출된 해시값\n"
+                "(SHA-256)을 전문팀으로부터 받아, 그 자리에서 피의자(소지자)에게\n"
+                "고지하고 교부확인서에 서명을 받는다. 추출된 사본 자체는 압수물로\n"
+                "취급하지 않으며, 원본 기기만 봉인하여 보관한다."
             ),
             "압수 후 실험실 이송": (
                 "[실험실 이송] 현장에서는 인계가 아닌 '이송 전 봉인'까지만 진행\n"
@@ -299,20 +346,33 @@ IPHONE_STEPS = COMMON_PRE_STEPS + [
             ),
             "보류 (책임자 추가 판단 필요)": (
                 "[보류] 아직 인계 대상이 정해지지 않았으므로 이 단계는 보류한다.\n"
-                "책임자의 결정이 내려오면 6단계로 돌아가 선택을 변경한 뒤 다시\n"
+                "책임자의 결정이 내려오면 4단계로 돌아가 선택을 변경한 뒤 다시\n"
                 "진행한다."
             ),
         },
+        "role_override": {
+            "수사관": {
+                "title_display": "전문 추출팀 인계",
+            },
+            "포렌식분석관": {
+                "detail": (
+                    "- 본인이 보유 장비 중 이 사건에 적합한 도구를 선택해 직접\n"
+                    "  추출을 수행한다. 별도의 인계 절차는 없으며, 작업 시작/종료\n"
+                    "  시각과 산출된 해시값을 스스로 기록한다."
+                ),
+                "caution": "본인이 직접 작업하더라도 모든 조작 과정은 기록하고, 해시값 검증 없이 결과를 확정하지 않는다.",
+            },
+        },
     },
     {
-        "title": "9. 증거물 포장 및 봉인",
+        "title": "7. 증거물 포장 및 봉인",
         "detail": "- 페러데이백째로 정전기 방지 봉투에 추가 포장, 봉인 스티커 서명/날짜 기입 및 촬영.",
         "caution": "운반 중 충격, 고온, 자기장 노출 주의.",
         "variants": {
             "현장 즉시 이미지 추출": (
-                "[현장 추출] 원본 기기와 함께, 추출된 이미지 사본(저장매체에\n"
-                "복사된 경우)도 별도로 봉인한다. 원본과 사본 각각에 해시값을\n"
-                "표기한 라벨을 부착한다."
+                "[현장 추출] 원본 기기만 포장·봉인한다. 추출된 사본은 압수물이\n"
+                "아니므로 별도로 포장하지 않으며, 해시값 출력물과 피의자\n"
+                "교부확인서를 사건기록에 편철해 보관한다."
             ),
             "압수 후 실험실 이송": (
                 "[실험실 이송] 원본만 포장/봉인하며, 추출은 실험실에서 진행되므로\n"
@@ -325,13 +385,14 @@ IPHONE_STEPS = COMMON_PRE_STEPS + [
         },
     },
     {
-        "title": "10. 증거물 목록 및 인수인계 기록 작성",
+        "title": "8. 증거물 목록 및 인수인계 기록 작성",
         "detail": "- 압수물 목록과 Chain of Custody 문서를 작성한다.",
         "caution": "모든 접촉/이동 이력을 빠짐없이 기록한다.",
         "variants": {
             "현장 즉시 이미지 추출": (
-                "[현장 추출] 목록에 원본 기기 외에 '현장 추출 이미지 사본'도 별도\n"
-                "항목으로 기재하고, 추출 담당자·장비명·해시값을 함께 적는다."
+                "[현장 추출] 압수물 목록에는 원본 기기만 기재한다. 추출 사본의\n"
+                "해시값과 피의자 교부 내역은 압수물 목록이 아닌 별도의\n"
+                "'현장 추출 확인서'에 기록하여 사건기록에 첨부한다."
             ),
             "압수 후 실험실 이송": (
                 "[실험실 이송] 목록에 이송 경로(출발지→도착지), 이송 담당자,\n"
@@ -379,6 +440,15 @@ ANDROID_STEPS = COMMON_PRE_STEPS + [
             "잠금 해제를 시도하거나 코드를 추측하지 않는다. 직접 설정을 변경하지 "
             "않으며, 판단이 어려운 항목은 동행한 포렌식 분석관의 의견에 따른다."
         ),
+        "role_override": {
+            "포렌식분석관": {
+                "detail": (
+                    "- 제조사/모델명, Android 버전, IMEI/시리얼, USB 디버깅 활성화\n"
+                    "  여부, 루팅 여부(추정), 개발자 옵션 활성화 여부를 직접\n"
+                    "  확인·기록한다."
+                ),
+            },
+        },
     },
     {
         "title": "4. 현장 이미지 추출 여부 결정",
@@ -448,6 +518,11 @@ ANDROID_STEPS = COMMON_PRE_STEPS + [
                 "두되, 전문팀 인계나 이송은 책임자 지시가 내려온 뒤 진행한다."
             ),
         },
+        "role_override": {
+            "포렌식분석관": {
+                "caution": "본인이 직접 공인 장비로 진행할 항목이므로, 위 정보를 스스로 확인·기록한 뒤 보유 장비로 작업을 시작한다.",
+            },
+        },
     },
     {
         "title": "6. 전문 추출팀 인계",
@@ -458,6 +533,17 @@ ANDROID_STEPS = COMMON_PRE_STEPS + [
             "  함께 전달한다."
         ),
         "caution": "비전문 인력의 임의 추출 시도는 증거능력을 저해할 수 있다.",
+        "tool_select": True,
+        "role_override": {
+            "포렌식분석관": {
+                "detail": (
+                    "- 본인이 보유 장비 중 이 사건에 적합한 도구를 선택해 직접\n"
+                    "  추출을 수행한다. 별도의 인계 절차는 없으며, 작업 시작/종료\n"
+                    "  시각과 산출된 해시값을 스스로 기록한다."
+                ),
+                "caution": "본인이 직접 작업하더라도 모든 조작 과정은 기록하고, 해시값 검증 없이 결과를 확정하지 않는다.",
+            },
+        },
         "variants": {
             "현장 즉시 이미지 추출": (
                 "[현장 추출] 전문 추출팀이 현장에서 작업을 완료할 때까지 입회\n"
@@ -522,6 +608,30 @@ ANDROID_STEPS = COMMON_PRE_STEPS + [
 
 DEVICE_STEPS = {"PC": PC_STEPS, "iPhone": IPHONE_STEPS, "Android": ANDROID_STEPS}
 
+# ---------------------------------------------------------------------------
+# 현장 수행 주체 및 보유 포렌식 도구
+# ---------------------------------------------------------------------------
+
+ROLE_OPTIONS = ["수사관", "포렌식분석관"]
+
+TOOLS_BY_DEVICE = {
+    "PC": ["디지털 콜렉터", "DFT", "AXIOM"],
+    "iPhone": ["MD-NEXT", "인사이트 UFED (Cellebrite)", "AXIOM"],
+    "Android": ["MD-NEXT", "인사이트 UFED (Cellebrite)", "AXIOM"],
+}
+
+
+def get_role_text(step, role):
+    """역할(수사관/포렌식분석관)에 따라 조정된 (detail, caution)을 반환한다.
+    role_override에 해당 role의 값이 있으면 그 값으로 덮어쓰고, 없으면 기본값을 쓴다."""
+    detail = step.get("detail", "")
+    caution = step.get("caution", "")
+    override = (step.get("role_override") or {}).get(role)
+    if override:
+        detail = override.get("detail", detail)
+        caution = override.get("caution", caution)
+    return detail, caution
+
 
 def get_selected_decision(steps, records):
     """이 기기 유형의 단계들 중 'decision' 타입 단계에서 선택된 값을 반환한다.
@@ -544,9 +654,10 @@ def init_state():
     defaults = {
         "stage": "start",          # "start" | "guide"
         "device_type": None,
+        "role": None,              # "수사관" | "포렌식분석관"
         "current_index": 0,
         "case_info": {},
-        "records": {},             # {step_index: {"done": bool, "note": str, "photos": [UploadedFile,...]}}
+        "records": {},             # {step_index: {"done": bool, "note": str, "photos": [...], "decision": str, "tool": str}}
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -554,10 +665,10 @@ def init_state():
 
 
 def render_start():
-    st.title(APP_TITLE)
+    st.title("현장 압수 절차")
     st.caption(
         "현장 보존 절차를 단계별로 안내합니다. 먼저 사건 정보를 입력한 뒤 "
-        "압수 대상 기기 유형을 선택하세요."
+        "수행 주체와 압수 대상 기기 유형을 선택하세요."
     )
 
     with st.form("case_info_form"):
@@ -568,6 +679,12 @@ def render_start():
         seized_at = st.text_input(
             "압수 일시 (YYYY-MM-DD HH:MM)",
             value=datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
+        )
+        role = st.radio(
+            "현장 수행 주체",
+            ROLE_OPTIONS,
+            horizontal=True,
+            help="수사관: 현장 보존·협의 중심 절차. 포렌식분석관: 본인이 직접 기술 항목과 추출 작업을 수행하는 절차.",
         )
         device_type = st.radio("압수 대상 기기 유형", ["PC", "iPhone", "Android"], horizontal=True)
         submitted = st.form_submit_button("절차 안내 시작 ▶")
@@ -581,10 +698,12 @@ def render_start():
             "압수 일시": seized_at,
         }
         st.session_state.device_type = device_type
+        st.session_state.role = role
         st.session_state.current_index = 0
         steps = DEVICE_STEPS[device_type]
         st.session_state.records = {
-            i: {"done": False, "note": "", "photos": [], "decision": None} for i in range(len(steps))
+            i: {"done": False, "note": "", "photos": [], "decision": None, "tool": None}
+            for i in range(len(steps))
         }
         st.session_state.stage = "guide"
         st.rerun()
@@ -644,6 +763,7 @@ def _esc(text):
 
 def build_pdf_bytes():
     device_type = st.session_state.device_type
+    role = st.session_state.role
     steps = DEVICE_STEPS[device_type]
     records = st.session_state.records
 
@@ -675,6 +795,7 @@ def build_pdf_bytes():
     meta_rows = [
         ["생성 시각", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")],
         ["기기 유형", device_type],
+        ["현장 수행 주체", role or "-"],
     ]
     for k, v in st.session_state.case_info.items():
         meta_rows.append([k, v or "-"])
@@ -700,7 +821,12 @@ def build_pdf_bytes():
         rec = records[i]
         status = "[완료]" if rec["done"] else "[미완료]"
         story.append(Paragraph(f"{status} {_esc(step['title'])}", styles["step_title"]))
-        story.append(Paragraph(_esc(step["detail"]).replace("\n", "<br/>"), styles["body"]))
+        detail_text, caution_text = get_role_text(step, role)
+        story.append(Paragraph(_esc(detail_text).replace("\n", "<br/>"), styles["body"]))
+
+        if step.get("tool_select") and rec.get("tool"):
+            story.append(Spacer(1, 3))
+            story.append(Paragraph(f"🔧 사용 장비: {_esc(rec['tool'])}", styles["decision"]))
 
         if step.get("variants") and selected_decision:
             variant_text = step["variants"].get(selected_decision)
@@ -708,9 +834,9 @@ def build_pdf_bytes():
                 story.append(Spacer(1, 3))
                 story.append(Paragraph(_esc(variant_text).replace("\n", "<br/>"), styles["decision"]))
 
-        if step.get("caution"):
+        if caution_text:
             story.append(Spacer(1, 3))
-            story.append(Paragraph(f"⚠ 주의: {_esc(step['caution'])}", styles["caution"]))
+            story.append(Paragraph(f"⚠ 주의: {_esc(caution_text)}", styles["caution"]))
 
         if step.get("type") == "decision" and rec.get("decision"):
             story.append(Spacer(1, 3))
@@ -780,6 +906,7 @@ def build_pdf_bytes():
 
 def render_guide():
     device_type = st.session_state.device_type
+    role = st.session_state.role
     steps = DEVICE_STEPS[device_type]
     idx = st.session_state.current_index
     step = steps[idx]
@@ -787,7 +914,7 @@ def render_guide():
 
     top_l, top_r = st.columns([4, 1])
     with top_l:
-        st.title(f"[{device_type}] 현장 압수 절차")
+        st.title(f"[{device_type} · {role}] 현장 압수 절차")
     with top_r:
         if st.button("처음으로"):
             st.session_state.stage = "start"
@@ -796,9 +923,23 @@ def render_guide():
     st.progress((idx + 1) / len(steps), text=f"{idx + 1} / {len(steps)} 단계")
 
     st.subheader(step["title"])
-    st.markdown(step["detail"].replace("\n", "  \n"))
-    if step.get("caution"):
-        st.warning(f"⚠ 주의: {step['caution']}")
+    detail_text, caution_text = get_role_text(step, role)
+    st.markdown(detail_text.replace("\n", "  \n"))
+    if caution_text:
+        st.warning(f"⚠ 주의: {caution_text}")
+
+    if step.get("tool_select") and role == "포렌식분석관":
+        tool_options = TOOLS_BY_DEVICE.get(device_type, [])
+        current_tool = rec.get("tool")
+        tool_index = tool_options.index(current_tool) if current_tool in tool_options else None
+        chosen_tool = st.selectbox(
+            "사용 장비 선택 (보유 포렌식 도구)",
+            tool_options,
+            index=tool_index,
+            key=f"tool_{idx}",
+            placeholder="도구를 선택하세요",
+        )
+        rec["tool"] = chosen_tool
 
     if step.get("variants"):
         selected_decision = get_selected_decision(steps, st.session_state.records)
