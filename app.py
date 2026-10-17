@@ -964,28 +964,28 @@ st.markdown(
     }
 
     /* ==========================================================================
-       3. 라디오 버튼 (터치 카드 칩 스타일 - 모바일 터치 최적화)
+       3. 라디오 버튼 (터치 카드 칩 스타일 - 모바일 터치 최적화, 버튼형)
        ========================================================================== */
     div[data-testid="stRadio"] > div[role="radiogroup"] {
         display: flex;
         flex-direction: row;
         flex-wrap: wrap;
-        gap: 8px;
-        margin-top: 4px;
+        gap: 12px;
+        margin-top: 6px;
     }
     div[data-testid="stRadio"] > div[role="radiogroup"] > label {
-        flex: 1 1 calc(50% - 8px);
-        min-width: 110px;
+        flex: 1 1 calc(50% - 12px);
+        min-width: 130px;
         background-color: #1e293b !important;
-        border: 1px solid #334155 !important;
-        border-radius: 12px !important;
-        padding: 10px 14px !important;
+        border: 2px solid #334155 !important;
+        border-radius: 14px !important;
+        padding: 14px 16px !important;
         margin: 0 !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
         cursor: pointer !important;
-        min-height: 46px !important;
+        min-height: 56px !important;
         transition: all 0.2s ease;
     }
     div[data-testid="stRadio"] > div[role="radiogroup"] > label:hover {
@@ -993,13 +993,17 @@ st.markdown(
         border-color: #38bdf8 !important;
     }
     div[data-testid="stRadio"] > div[role="radiogroup"] > label:has(input:checked) {
-        background: rgba(2, 132, 199, 0.2) !important;
+        background: rgba(2, 132, 199, 0.25) !important;
         border-color: #38bdf8 !important;
-        box-shadow: 0 2px 10px rgba(56, 189, 248, 0.25) !important;
+        box-shadow: 0 4px 14px rgba(56, 189, 248, 0.35) !important;
+    }
+    div[data-testid="stRadio"] > div[role="radiogroup"] > label span {
+        font-size: 1.05rem !important;
+        font-weight: 600 !important;
     }
     div[data-testid="stRadio"] > div[role="radiogroup"] > label:has(input:checked) span {
         color: #38bdf8 !important;
-        font-weight: 700 !important;
+        font-weight: 800 !important;
     }
 
     /* ==========================================================================
@@ -1035,6 +1039,14 @@ st.markdown(
         color: #ffffff !important;
         border: 1px solid #38bdf8 !important;
         box-shadow: 0 4px 14px rgba(2, 132, 199, 0.45) !important;
+    }
+    /* 시작하기 버튼 특별 대형화 (모바일 터치 최적화) */
+    [data-testid="stFormSubmitButton"] button {
+        min-height: 60px !important;
+        font-size: 1.15rem !important;
+        border-radius: 14px !important;
+        margin-top: 10px !important;
+        letter-spacing: -0.01em !important;
     }
     [data-testid="stFormSubmitButton"] button:hover,
     div[data-testid="column"]:nth-child(2) .stButton button:hover,
@@ -1184,7 +1196,7 @@ def init_state():
 
 
 def render_start():
-    st.title("현장 압수 절차")
+    st.markdown("<h1 style='text-align: center; margin-bottom: 1.2rem;'>현장 압수 절차</h1>", unsafe_allow_html=True)
 
     with st.form("case_info_form"):
         case_number = st.text_input("사건번호")
@@ -1199,9 +1211,8 @@ def render_start():
             "현장 수행 주체",
             ROLE_OPTIONS,
             horizontal=True,
-            help="수사관: 현장 보존·협의 중심 절차. 포렌식분석관: 본인이 직접 기술 항목과 추출 작업을 수행하는 절차.",
         )
-        submitted = st.form_submit_button("절차 안내 시작 ▶")
+        submitted = st.form_submit_button("절차 안내 시작 ▶", use_container_width=True)
 
     if submitted:
         st.session_state.case_info = {
@@ -1218,10 +1229,25 @@ def render_start():
         st.session_state.stage = "guide"
         st.rerun()
 
-    st.info(
-        "※ 본 프로그램은 현장 보존 절차(사진기록, 전원상태, 네트워크 차단, 해시기록, "
-        "Chain of Custody 등) 안내용입니다. 잠금해제·데이터추출 등 기술적 작업은 "
-        "법적 권한을 가진 전문 인력이 공인 장비로 수행해야 합니다."
+    st.markdown(
+        """
+        <div style="
+            background: rgba(245, 158, 11, 0.12);
+            border: 1.5px solid #f59e0b;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-top: 18px;
+            color: #fef08a;
+            font-size: 0.92rem;
+            line-height: 1.55;
+            font-weight: 500;
+        ">
+            <span style="color: #fbbf24; font-weight: 800; font-size: 1rem; margin-right: 4px;">⚡ 현장 안내 요약</span><br>
+            • 본 가이드는 현장 보존(사진·전원·네트워크·해시·Chain of Custody) 기록용입니다.<br>
+            • 잠금해제 및 데이터 추출은 공인 장비와 권한을 가진 전문 인력이 수행해야 합니다.
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
 
 
