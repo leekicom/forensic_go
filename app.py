@@ -1557,8 +1557,7 @@ def build_pdf_bytes():
     story.append(Paragraph("서명란", styles["step_title"]))
     story.append(Spacer(1, 10))
     sign_table = Table(
-        [["담당 수사관 서명:", "", "일시:", ""],
-         ["입회인 서명:", "", "일시:", ""]],
+        [["담당 수사관 서명:", "", "일시:", ""]],
         colWidths=[30 * mm, 50 * mm, 15 * mm, 45 * mm],
     )
     sign_table.setStyle(TableStyle([
