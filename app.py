@@ -1826,43 +1826,33 @@ def render_guide():
                 "폰트가 없어도 PDF는 생성되지만 한글이 깨져 보일 수 있습니다."
             )
 
-        dcol1, dcol2 = st.columns(2)
-        with dcol1:
-            pdf_bytes = build_pdf_bytes()
-            st.download_button(
-                "PDF 리포트 다운로드",
-                data=pdf_bytes,
-                file_name=f"forensic_report_{device_type}_{file_tag}.pdf",
-                mime="application/pdf",
-            )
-        with dcol2:
-            if total_photos > 0:
-                zip_buffer = io.BytesIO()
-                with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
-                    for display_index, (record_index, export_step) in enumerate(export_steps):
-                        photos = st.session_state.records.get(record_index, {}).get("photos") or []
-                        step_folder = f"{display_index + 1:02d}_{export_step['title'][:20]}".replace("/", "-")
-                        for photo in photos:
-                            photo.seek(0)
-                            zf.writestr(f"{step_folder}/{photo.name}", photo.read())
-                st.download_button(
-                    f"{'1~4단계' if role == '수사관' else '전체 단계'} 사진 ZIP ({total_photos}장)",
-                    data=zip_buffer.getvalue(),
-                    file_name=f"forensic_photos_{device_type}_{file_tag}.zip",
-                    mime="application/zip",
-                )
-            else:
-                st.caption("첨부된 사진이 없습니다.")
+        pdf_bytes = build_pdf_bytes()
+        st.download_button(
+            "📄 PDF 리포트 다운로드",
+            data=pdf_bytes,
+            file_name=f"forensic_report_{device_type}_{file_tag}.pdf",
+            mime="application/pdf",
+            use_container_width=True,
+        )
 
-        with st.expander("전체 단계 한눈에 보기 / 바로 이동"):
-            for display_index, i in enumerate(get_visible_step_indices(steps, st.session_state.records, role)):
-                s = steps[i]
-                mark = "✅" if st.session_state.records.get(i, {}).get("done") else "⬜"
-                locked = i > effective_last
-                label = f"{mark} {display_index + 1}. {s['title']}" + (" 🔒" if locked else "")
-                if st.button(label, key=f"jump_{i}", disabled=locked):
-                    st.session_state.current_index = i
-                    st.rerun()
+        if total_photos > 0:
+            zip_buffer = io.BytesIO()
+            with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+                for display_index, (record_index, export_step) in enumerate(export_steps):
+                    photos = st.session_state.records.get(record_index, {}).get("photos") or []
+                    step_folder = f"{display_index + 1:02d}_{export_step['title'][:20]}".replace("/", "-")
+                    for photo in photos:
+                        photo.seek(0)
+                        zf.writestr(f"{step_folder}/{photo.name}", photo.read())
+            st.download_button(
+                f"📦 {'1~4단계' if role == '수사관' else '전체 단계'} 사진 ZIP 다운로드 ({total_photos}장)",
+                data=zip_buffer.getvalue(),
+                file_name=f"forensic_photos_{device_type}_{file_tag}.zip",
+                mime="application/zip",
+                use_container_width=True,
+            )
+        else:
+            st.caption("ℹ️ 첨부된 사진이 없어 ZIP 다운로드가 비활성화되어 있습니다.")
 
 
 def main():
