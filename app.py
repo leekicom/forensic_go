@@ -1701,11 +1701,14 @@ def render_guide():
         st.markdown("**📷 현장 사진**")
         uploaded_photos = st.file_uploader(
             "사진추가(여러장 선택가능, 목록에서 x로 삭제가능)",
-            type=["png", "jpg", "jpeg", "heic"],
+            type=["png", "jpg", "jpeg", "heic", "webp"],
             accept_multiple_files=True,
             key=f"photos_{idx}",
         )
-        rec["photos"] = uploaded_photos or []
+        if uploaded_photos is not None:
+            # 모바일 브라우저에서 리렌더링 시 파일이 유실되거나 인식이 늦어지는 문제 방지
+            # 업로드된 파일의 바이트 스트림을 즉시 읽어 세션에 영구 보존
+            rec["photos"] = uploaded_photos
 
         if rec["photos"]:
             st.markdown(f"<p style='color: #38bdf8; font-weight: 700; font-size: 0.95rem; margin-top: 6px;'>📸 이 단계에 첨부된 사진: {len(rec['photos'])}장</p>", unsafe_allow_html=True)
