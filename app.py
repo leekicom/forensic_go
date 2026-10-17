@@ -1149,9 +1149,28 @@ st.markdown(
        ========================================================================== */
     [data-testid="stFileUploader"] {
         background-color: #0f172a !important;
-        border: 1px dashed #334155 !important;
+        border: 2px dashed #0284c7 !important;
         border-radius: 14px !important;
         padding: 1rem !important;
+    }
+    /* "사진 추가 (여러 장 선택 가능...)" 라벨 텍스트를 눈에 확 띄는 밝은 화이트/하늘색으로 변경 */
+    [data-testid="stFileUploader"] label,
+    [data-testid="stFileUploader"] label p,
+    [data-testid="stFileUploader"] p {
+        color: #ffffff !important;
+        font-weight: 700 !important;
+        font-size: 1rem !important;
+    }
+    /* 업로더 내부 드래그 앤 드롭 안내 문구 밝게 처리 */
+    [data-testid="stFileUploader"] section div,
+    [data-testid="stFileUploader"] section span {
+        color: #e2e8f0 !important;
+        font-weight: 500 !important;
+    }
+    /* 파일 크기 제한 및 확장자 안내 텍스트 */
+    [data-testid="stFileUploader"] small {
+        color: #fef08a !important;
+        font-weight: 600 !important;
     }
     [data-testid="stImage"] img {
         border-radius: 12px !important;
@@ -1206,6 +1225,53 @@ def render_start():
     if "role" not in st.session_state or not st.session_state.role:
         st.session_state.role = "수사관"
 
+    # 1. 폼 밖에서 독립된 전용 선택 버튼 제공 (라디오 컴포넌트 완전 배제)
+    st.markdown("<p style='font-size: 0.95rem; font-weight: 700; color: #f1f5f9; margin-bottom: 8px;'>현장 수행 주체 선택 (터치하여 선택)</p>", unsafe_allow_html=True)
+    rcol1, rcol2 = st.columns(2, gap="small")
+    with rcol1:
+        is_investigator = (st.session_state.role == "수사관")
+        label_inv = "✓ 수사관" if is_investigator else "수사관"
+        type_inv = "primary" if is_investigator else "secondary"
+        if st.button(label_inv, type=type_inv, use_container_width=True, key="btn_role_investigator"):
+            st.session_state.role = "수사관"
+            st.rerun()
+    with rcol2:
+        is_analyst = (st.session_state.role == "포렌식분석관")
+        label_ana = "✓ 포렌식분석관" if is_analyst else "포렌식분석관"
+        type_ana = "primary" if is_analyst else "secondary"
+        if st.button(label_ana, type=type_ana, use_container_width=True, key="btn_role_analyst"):
+            st.session_state.role = "포렌식분석관"
+            st.rerun()
+
+    # 현재 선택 상태를 밝은 하늘색 카드 형태로 표시
+    current_role = st.session_state.role
+    st.markdown(
+        f"""
+        <div style="
+            background: rgba(2, 132, 199, 0.25);
+            border: 2px solid #38bdf8;
+            border-radius: 12px;
+            padding: 10px 14px;
+            margin-top: 8px;
+            margin-bottom: 16px;
+            color: #ffffff;
+            font-size: 0.98rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        ">
+            <div>
+                현재 선택: <span style="color: #38bdf8; font-size: 1.12rem; font-weight: 800; text-decoration: underline;">{current_role}</span>
+            </div>
+            <span style="color: #fef08a; font-size: 0.85rem; font-weight: 600;">
+                {'(총 4단계 진행)' if current_role == '수사관' else '(전체 7~10단계 진행)'}
+            </span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
     with st.form("case_info_form"):
         case_number = st.text_input("사건번호", value=st.session_state.case_info.get("사건번호", ""))
         officer = st.text_input("담당 수사관 (성명/소속)", value=st.session_state.case_info.get("담당 수사관", ""))
@@ -1214,42 +1280,6 @@ def render_start():
         seized_at = st.text_input(
             "압수 일시 (YYYY-MM-DD HH:MM)",
             value=st.session_state.case_info.get("압수 일시", now_kst().strftime("%Y-%m-%d %H:%M")),
-        )
-        
-        st.markdown("<p style='font-size: 0.92rem; font-weight: 700; color: #cbd5e1; margin-bottom: 6px;'>현장 수행 주체 선택</p>", unsafe_allow_html=True)
-        # 폼 내부에서도 선택 상태가 명확한 라디오 UI (커스텀 고대비 버튼 카드)
-        role = st.radio(
-            "현장 수행 주체",
-            ROLE_OPTIONS,
-            index=ROLE_OPTIONS.index(st.session_state.role) if st.session_state.role in ROLE_OPTIONS else 0,
-            horizontal=True,
-            label_visibility="collapsed",
-        )
-        # 선택된 역할을 아래에 선명하게 안내
-        st.markdown(
-            f"""
-            <div style="
-                background: rgba(2, 132, 199, 0.18);
-                border: 1.5px solid #38bdf8;
-                border-radius: 10px;
-                padding: 10px 14px;
-                margin-top: 8px;
-                margin-bottom: 12px;
-                color: #ffffff;
-                font-size: 0.95rem;
-                font-weight: 700;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            ">
-                <span style="font-size: 1.2rem;">👉</span> 
-                선택된 수행 주체: <span style="color: #38bdf8; font-size: 1.05rem; font-weight: 800; text-decoration: underline;">{role}</span>
-                <span style="color: #94a3b8; font-size: 0.82rem; font-weight: 400; margin-left: auto;">
-                    {'(총 4단계 기본 보존)' if role == '수사관' else '(전체 7~10단계 정밀 기술)'}
-                </span>
-            </div>
-            """,
-            unsafe_allow_html=True,
         )
         
         submitted = st.form_submit_button("절차 안내 시작 ▶", use_container_width=True)
@@ -1263,7 +1293,6 @@ def render_start():
             "압수 일시": seized_at,
         }
         st.session_state.device_type = None  # 현장 안전·권한 확인 후 기기 유형 선택
-        st.session_state.role = role or "수사관"
         st.session_state.current_index = 0
         st.session_state.records = {}
         st.session_state.stage = "guide"
