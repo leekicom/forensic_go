@@ -1148,29 +1148,50 @@ st.markdown(
        7. 파일 업로더 & 사진 썸네일 & 다운로드 버튼
        ========================================================================== */
     [data-testid="stFileUploader"] {
-        background-color: #0f172a !important;
-        border: 2px dashed #0284c7 !important;
-        border-radius: 14px !important;
-        padding: 1rem !important;
+        background-color: transparent !important;
+        border: none !important;
+        padding: 0 !important;
     }
-    /* "사진 추가 (여러 장 선택 가능...)" 라벨 텍스트를 눈에 확 띄는 밝은 화이트/하늘색으로 변경 */
+    /* 라벨 텍스트: 약간 작고 깔끔한 밝은 화이트 (#ffffff, 0.88rem) */
     [data-testid="stFileUploader"] label,
-    [data-testid="stFileUploader"] label p,
-    [data-testid="stFileUploader"] p {
-        color: #ffffff !important;
-        font-weight: 700 !important;
-        font-size: 1rem !important;
+    [data-testid="stFileUploader"] label p {
+        color: #f1f5f9 !important;
+        font-weight: 600 !important;
+        font-size: 0.88rem !important;
+        margin-bottom: 6px !important;
     }
-    /* 업로더 내부 드래그 앤 드롭 안내 문구 밝게 처리 */
+    /* 흰 배경 박스(Dropzone section)를 어두운 슬레이트(#1e293b) 배경으로 변경 */
+    [data-testid="stFileUploader"] section {
+        background-color: #1e293b !important;
+        border: 1.5px dashed #38bdf8 !important;
+        border-radius: 14px !important;
+        padding: 1.1rem !important;
+    }
+    /* 드래그 앤 드롭 내부 텍스트 */
     [data-testid="stFileUploader"] section div,
     [data-testid="stFileUploader"] section span {
-        color: #e2e8f0 !important;
+        color: #cbd5e1 !important;
         font-weight: 500 !important;
     }
-    /* 파일 크기 제한 및 확장자 안내 텍스트 */
+    /* 파일 찾아보기(Browse files) 버튼 스타일링: 어두운 슬레이트 카드 버튼 */
+    [data-testid="stFileUploader"] section button {
+        background-color: #0f172a !important;
+        color: #38bdf8 !important;
+        border: 1px solid #38bdf8 !important;
+        border-radius: 10px !important;
+        font-weight: 700 !important;
+        min-height: 40px !important;
+        padding: 6px 14px !important;
+    }
+    [data-testid="stFileUploader"] section button:hover {
+        background-color: #0284c7 !important;
+        color: #ffffff !important;
+    }
+    /* 파일 크기 제한 및 확장자 안내 텍스트 (밝은 옐로우) */
     [data-testid="stFileUploader"] small {
         color: #fef08a !important;
         font-weight: 600 !important;
+        font-size: 0.8rem !important;
     }
     [data-testid="stImage"] img {
         border-radius: 12px !important;
@@ -1679,7 +1700,7 @@ def render_guide():
 
         st.markdown("**📷 현장 사진**")
         uploaded_photos = st.file_uploader(
-            "사진 추가 (여러 장 선택 가능, 이미 올린 사진은 목록에서 x로 삭제 가능)",
+            "사진추가(여러장 선택가능, 목록에서 x로 삭제가능)",
             type=["png", "jpg", "jpeg", "heic"],
             accept_multiple_files=True,
             key=f"photos_{idx}",
