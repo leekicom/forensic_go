@@ -195,33 +195,19 @@ PC_STEPS = COMMON_PRE_STEPS + [
         },
     },
     {
-        "title": "전원 차단, 케이블 라벨링 및 쓰기방지장치 준비",
-        "detail": (
-            "- 휘발성 데이터, 암호화 상태, 시스템 안정성 및 기관 SOP를 고려해 종료 방법을\n"
-            "  결정한다. 전원 차단은 데이터 손실·변경을 유발할 수 있으므로 임의로 수행하지 않는다.\n"
-            "- 모든 케이블에 라벨을 붙이고 연결 위치를 사진으로 남긴 뒤 분리한다.\n"
-            "- 이미징 시 반드시 쓰기방지장치(Write Blocker)를 사용하여 원본이\n"
-            "  변경되지 않도록 준비한다."
-        ),
-        "caution": "노트북 배터리 분리 등 물리적 조작은 기기 구조와 보존 목표에 따라 승인된 절차로 수행한다. 쓰기방지장치 없이 원본 저장매체를 분석용 PC에 직접 연결하지 않는다.",
-    },
-    {
-        "title": "현장 이미지 추출 여부 결정",
+        "title": "전원 차단·쓰기방지 준비 및 이미지 추출 여부 결정",
         "type": "decision",
         "options": ["현장 즉시 이미지 추출", "압수 후 실험실 이송", "보류 (책임자 추가 판단 필요)"],
         "detail": (
-            "현장에서 바로 저장매체를 이미징할지, PC 또는 저장매체를 압수해\n"
-            "실험실로 옮긴 뒤 처리할지를 아래 기준으로 판단해 선택한다. 동행한\n"
-            "포렌식 분석관과 협의하여 결정한다.\n\n"
-            "판단 기준:\n"
-            "- 시간 민감성: 암호화 재잠금, 시스템 자동 종료 위험이 임박했는가\n"
-            "- 현장 장비: 공인 이미징 장비와 전문 인력이 현장에 있는가\n"
-            "- 공간/환경: 전력, 작업 테이블 등 여건이 되는가\n"
-            "- 법적 권한 범위: 영장/동의 범위가 현장 이미징까지 포함하는가\n"
-            "- 증거 복잡성: 대용량 저장소, RAID 구성 등으로 실험실 정밀 분석이\n"
-            "  필요한 상황인가"
+            "[1. 전원 차단 및 쓰기방지 준비]\n"
+            "- 휘발성 데이터, 암호화 상태, 시스템 안정성 및 기관 SOP를 고려해 종료 방법을 결정한다.\n"
+            "- 모든 케이블에 라벨을 붙이고 연결 위치를 사진으로 남긴 뒤 분리한다.\n"
+            "- 이미징 시 반드시 쓰기방지장치(Write Blocker)를 사용하여 원본이 변경되지 않도록 준비한다.\n\n"
+            "[2. 현장 이미지 추출 여부 결정]\n"
+            "- 시간 민감성, 현장 장비, 작업 환경, 영장 범위를 종합 판단하여 처리 경로를 결정한다.\n"
+            "- 결정 권한은 현장 책임자에게 있으며, 애매하면 '보류'를 선택하고 지시를 받는다."
         ),
-        "caution": "결정 권한은 현장 책임자(또는 기관 SOP가 지정한 담당자)에게 있다. 애매하면 '보류'를 선택하고 책임자 지시를 받는다.",
+        "caution": "노트북 배터리 분리 등 물리적 조작은 승인된 절차로 수행한다. 쓰기방지장치 없이 원본 저장매체를 분석용 PC에 직접 연결하지 않는다.",
         "branch_info": {
             "현장 즉시 이미지 추출": (
                 "→ 전력, 공간 등 현장 작업 여건을 지원하며 공인 장비로 이미징한다.\n"
@@ -1795,12 +1781,17 @@ def render_guide():
     with col2:
         can_advance = visible_position < len(visible_indices) - 1 and idx < effective_last
         device_missing = step.get("type") == "device_select" and not device_type
+        step_not_done = not rec.get("done", False) and step.get("type") != "device_select"
+        disable_next = device_missing or step_not_done
+
         if can_advance:
-            if st.button("다음 단계 ▶", disabled=device_missing, use_container_width=True):
+            if st.button("다음 단계 ▶", disabled=disable_next, use_container_width=True):
                 st.session_state.current_index = visible_indices[visible_position + 1]
                 st.rerun()
             if device_missing:
                 st.caption("기기 유형을 선택하면 다음 단계로 진행할 수 있습니다.")
+            elif step_not_done:
+                st.caption("💡 '이 단계를 완료했습니다'를 체크해야 다음 단계로 이동할 수 있습니다.")
         elif role == "수사관" and idx == effective_last and idx < len(steps) - 1:
             st.success("수사관 절차는 4단계까지입니다. 이후 기술적 절차는 포렌식분석관이 이어서 수행합니다. 아래에서 리포트를 다운로드하세요.")
         else:
