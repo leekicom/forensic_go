@@ -964,7 +964,7 @@ st.markdown(
     }
 
     /* ==========================================================================
-       3. 라디오 버튼 (터치 카드 칩 스타일 - 모바일 터치 최적화, 버튼형)
+       3. 라디오 버튼 (터치 카드 버튼 스타일 - 동그라미 완전 제거 & 깔끔한 버튼 UI)
        ========================================================================== */
     div[data-testid="stRadio"] > div[role="radiogroup"] {
         display: flex;
@@ -972,6 +972,12 @@ st.markdown(
         flex-wrap: wrap;
         gap: 12px;
         margin-top: 6px;
+    }
+    /* 기본 라디오 원형 동그라미(SVG 및 가상요소) 숨김 처리 */
+    div[data-testid="stRadio"] div[role="radiogroup"] input[type="radio"],
+    div[data-testid="stRadio"] div[role="radiogroup"] div[data-testid="stRadioButtonCustom"],
+    div[data-testid="stRadio"] div[role="radiogroup"] svg {
+        display: none !important;
     }
     div[data-testid="stRadio"] > div[role="radiogroup"] > label {
         flex: 1 1 calc(50% - 12px);
@@ -987,23 +993,29 @@ st.markdown(
         cursor: pointer !important;
         min-height: 56px !important;
         transition: all 0.2s ease;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2) !important;
     }
     div[data-testid="stRadio"] > div[role="radiogroup"] > label:hover {
         background-color: #273549 !important;
         border-color: #38bdf8 !important;
     }
     div[data-testid="stRadio"] > div[role="radiogroup"] > label:has(input:checked) {
-        background: rgba(2, 132, 199, 0.25) !important;
+        background: linear-gradient(135deg, rgba(2, 132, 199, 0.35) 0%, rgba(3, 105, 161, 0.45) 100%) !important;
         border-color: #38bdf8 !important;
-        box-shadow: 0 4px 14px rgba(56, 189, 248, 0.35) !important;
+        box-shadow: 0 4px 14px rgba(56, 189, 248, 0.4) !important;
     }
-    div[data-testid="stRadio"] > div[role="radiogroup"] > label span {
+    div[data-testid="stRadio"] > div[role="radiogroup"] > label span,
+    div[data-testid="stRadio"] > div[role="radiogroup"] > label p {
         font-size: 1.05rem !important;
         font-weight: 600 !important;
+        color: #94a3b8 !important;
+        margin: 0 !important;
     }
-    div[data-testid="stRadio"] > div[role="radiogroup"] > label:has(input:checked) span {
-        color: #38bdf8 !important;
+    div[data-testid="stRadio"] > div[role="radiogroup"] > label:has(input:checked) span,
+    div[data-testid="stRadio"] > div[role="radiogroup"] > label:has(input:checked) p {
+        color: #ffffff !important;
         font-weight: 800 !important;
+        text-shadow: 0 0 10px rgba(56, 189, 248, 0.6) !important;
     }
 
     /* ==========================================================================
