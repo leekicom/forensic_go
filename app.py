@@ -964,58 +964,39 @@ st.markdown(
     }
 
     /* ==========================================================================
-       3. 라디오 버튼 (터치 카드 버튼 스타일 - 동그라미 완전 제거 & 깔끔한 버튼 UI)
+       3. 세그먼트 컨트롤 & 토글 버튼 스타일 (라디오 동그라미 완전 대체)
        ========================================================================== */
-    div[data-testid="stRadio"] > div[role="radiogroup"] {
-        display: flex;
-        flex-direction: row;
-        flex-wrap: wrap;
-        gap: 12px;
-        margin-top: 6px;
+    div[data-testid="stSegmentedControl"] {
+        margin-top: 6px !important;
     }
-    /* 기본 라디오 원형 동그라미(SVG 및 가상요소) 숨김 처리 */
-    div[data-testid="stRadio"] div[role="radiogroup"] input[type="radio"],
-    div[data-testid="stRadio"] div[role="radiogroup"] div[data-testid="stRadioButtonCustom"],
-    div[data-testid="stRadio"] div[role="radiogroup"] svg {
-        display: none !important;
-    }
-    div[data-testid="stRadio"] > div[role="radiogroup"] > label {
-        flex: 1 1 calc(50% - 12px);
-        min-width: 130px;
+    div[data-testid="stSegmentedControl"] > div {
         background-color: #1e293b !important;
         border: 2px solid #334155 !important;
-        border-radius: 14px !important;
-        padding: 14px 16px !important;
-        margin: 0 !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        cursor: pointer !important;
+        border-radius: 16px !important;
+        padding: 5px !important;
+        gap: 8px !important;
         min-height: 56px !important;
-        transition: all 0.2s ease;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2) !important;
     }
-    div[data-testid="stRadio"] > div[role="radiogroup"] > label:hover {
-        background-color: #273549 !important;
-        border-color: #38bdf8 !important;
-    }
-    div[data-testid="stRadio"] > div[role="radiogroup"] > label:has(input:checked) {
-        background: linear-gradient(135deg, rgba(2, 132, 199, 0.35) 0%, rgba(3, 105, 161, 0.45) 100%) !important;
-        border-color: #38bdf8 !important;
-        box-shadow: 0 4px 14px rgba(56, 189, 248, 0.4) !important;
-    }
-    div[data-testid="stRadio"] > div[role="radiogroup"] > label span,
-    div[data-testid="stRadio"] > div[role="radiogroup"] > label p {
-        font-size: 1.05rem !important;
-        font-weight: 600 !important;
+    div[data-testid="stSegmentedControl"] button {
+        background-color: transparent !important;
+        border: none !important;
+        border-radius: 12px !important;
         color: #94a3b8 !important;
-        margin: 0 !important;
+        font-size: 1.05rem !important;
+        font-weight: 700 !important;
+        min-height: 46px !important;
+        transition: all 0.2s ease !important;
+        box-shadow: none !important;
     }
-    div[data-testid="stRadio"] > div[role="radiogroup"] > label:has(input:checked) span,
-    div[data-testid="stRadio"] > div[role="radiogroup"] > label:has(input:checked) p {
+    div[data-testid="stSegmentedControl"] button:hover {
+        background-color: #273549 !important;
+        color: #ffffff !important;
+    }
+    div[data-testid="stSegmentedControl"] button[aria-selected="true"] {
+        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
         color: #ffffff !important;
         font-weight: 800 !important;
-        text-shadow: 0 0 10px rgba(56, 189, 248, 0.6) !important;
+        box-shadow: 0 4px 14px rgba(56, 189, 248, 0.45) !important;
     }
 
     /* ==========================================================================
@@ -1210,20 +1191,37 @@ def init_state():
 def render_start():
     st.markdown("<h1 style='text-align: center; margin-bottom: 1.2rem;'>현장 압수 절차</h1>", unsafe_allow_html=True)
 
+    if "role" not in st.session_state or not st.session_state.role:
+        st.session_state.role = "수사관"
+
     with st.form("case_info_form"):
-        case_number = st.text_input("사건번호")
-        officer = st.text_input("담당 수사관 (성명/소속)")
-        suspect = st.text_input("피의자(소지자) 성명")
-        location = st.text_input("현장 위치")
+        case_number = st.text_input("사건번호", value=st.session_state.case_info.get("사건번호", ""))
+        officer = st.text_input("담당 수사관 (성명/소속)", value=st.session_state.case_info.get("담당 수사관", ""))
+        suspect = st.text_input("피의자(소지자) 성명", value=st.session_state.case_info.get("피의자(소지자) 성명", ""))
+        location = st.text_input("현장 위치", value=st.session_state.case_info.get("현장 위치", ""))
         seized_at = st.text_input(
             "압수 일시 (YYYY-MM-DD HH:MM)",
-            value=now_kst().strftime("%Y-%m-%d %H:%M"),
+            value=st.session_state.case_info.get("압수 일시", now_kst().strftime("%Y-%m-%d %H:%M")),
         )
-        role = st.radio(
-            "현장 수행 주체",
-            ROLE_OPTIONS,
-            horizontal=True,
-        )
+        
+        st.markdown("<p style='font-size: 0.9rem; font-weight: 700; color: #cbd5e1; margin-bottom: 6px;'>현장 수행 주체 선택</p>", unsafe_allow_html=True)
+        # st.segmented_control 또는 st.pills 형태 (동그라미 라디오 완전 대체)
+        try:
+            role = st.segmented_control(
+                "현장 수행 주체",
+                ROLE_OPTIONS,
+                default=st.session_state.role if st.session_state.role in ROLE_OPTIONS else "수사관",
+                label_visibility="collapsed",
+            )
+        except Exception:
+            # 구버전 스트림릿 호환용 셀렉트박스 카드
+            role = st.selectbox(
+                "현장 수행 주체",
+                ROLE_OPTIONS,
+                index=ROLE_OPTIONS.index(st.session_state.role) if st.session_state.role in ROLE_OPTIONS else 0,
+                label_visibility="collapsed",
+            )
+        
         submitted = st.form_submit_button("절차 안내 시작 ▶", use_container_width=True)
 
     if submitted:
@@ -1235,7 +1233,7 @@ def render_start():
             "압수 일시": seized_at,
         }
         st.session_state.device_type = None  # 현장 안전·권한 확인 후 기기 유형 선택
-        st.session_state.role = role
+        st.session_state.role = role or "수사관"
         st.session_state.current_index = 0
         st.session_state.records = {}
         st.session_state.stage = "guide"
@@ -1630,13 +1628,13 @@ def render_guide():
         rec["photos"] = uploaded_photos or []
 
         if rec["photos"]:
-            st.caption(f"이 단계에 첨부된 사진: {len(rec['photos'])}장")
+            st.markdown(f"<p style='color: #38bdf8; font-weight: 700; font-size: 0.95rem; margin-top: 6px;'>📸 이 단계에 첨부된 사진: {len(rec['photos'])}장</p>", unsafe_allow_html=True)
             thumb_cols = st.columns(3)
             for p_idx, photo in enumerate(rec["photos"]):
                 with thumb_cols[p_idx % 3]:
                     st.image(photo, caption=photo.name, width="stretch")
         else:
-            st.caption("아직 첨부된 사진이 없습니다.")
+            st.markdown("<p style='color: #fef08a; font-weight: 600; font-size: 0.9rem; margin-top: 6px;'>ℹ️ 아직 첨부된 사진이 없습니다. (필요 시 위에서 사진을 추가하세요)</p>", unsafe_allow_html=True)
 
     # 모든 단계 내용(특히 결정 라디오 처리)이 끝난 뒤에 계산해야 이번 렌더링에서
     # 방금 선택한 결정값이 바로 반영된다.
