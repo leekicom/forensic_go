@@ -572,10 +572,20 @@ ANDROID_STEPS = COMMON_PRE_STEPS + [
         "role_override": {
             "포렌식분석관": {
                 "detail": (
-                    "- 제조사/모델명, Android 버전, IMEI/시리얼, USB 디버깅 활성화\n"
-                    "  여부, 루팅 여부(추정), 개발자 옵션 활성화 여부를 직접\n"
-                    "  확인·기록한다."
+                    "[1. 기기 기본 식별]\n"
+                    "- 제조사, 모델명, Android 버전, IMEI/시리얼 번호 확인 및 기록\n\n"
+                    "[2. 개발자 옵션 활성화 방법 및 확인]\n"
+                    "- 경로: '설정' > '휴대전화 정보' > '소프트웨어 정보' > '빌드번호(Build number)'를 연속 7회 탭\n"
+                    "- 패턴/PIN 입력 후 \"개발자 모드를 켰습니다\" 알림 확인\n"
+                    "- '설정' 최하단에 [개발자 옵션] 메뉴가 정상 생성되었는지 확인\n\n"
+                    "[3. USB 디버깅 활성화 설정]\n"
+                    "- 경로: '설정' > '개발자 옵션' > [USB 디버깅] 토글 스위치 켬(ON)\n"
+                    "- 팝업창(\"USB 디버깅을 허용하시겠습니까?\")에서 [확인] 선택\n"
+                    "- 분석 PC/포렌식 장비 연결 시: \"이 컴퓨터에서 항상 허용\" 체크 후 [허용] 클릭\n\n"
+                    "[4. 기타 보안 상태 점검]\n"
+                    "- 루팅(Rooting) 여부 확인, 잠금 방식(패턴/PIN/생체인증), Knox 워런티 트리거 여부 점검"
                 ),
+                "caution": "화면이 잠겨 있거나 BFU 상태에서는 설정을 변경할 수 없으므로 강제 조작하지 말고, 화면 조작 전후 과정을 반드시 사진 촬영으로 기록한다.",
             },
         },
     },
@@ -1653,15 +1663,37 @@ def render_guide():
         if step.get("tool_select") and role == "포렌식분석관":
             tool_options = TOOLS_BY_DEVICE.get(device_type, [])
             current_tool = rec.get("tool")
-            tool_index = tool_options.index(current_tool) if current_tool in tool_options else None
-            chosen_tool = st.selectbox(
-                "사용 장비 선택 (보유 포렌식 도구)",
-                tool_options,
-                index=tool_index,
-                key=f"tool_{idx}",
-                placeholder="도구를 선택하세요",
-            )
-            rec["tool"] = chosen_tool
+            
+            st.markdown("<p style='font-size: 0.95rem; font-weight: 700; color: #f1f5f9; margin-top: 1rem; margin-bottom: 8px;'>사용 장비 선택 (보유 포렌식 도구 터치 선택)</p>", unsafe_allow_html=True)
+            tool_cols = st.columns(len(tool_options), gap="small")
+            for t_idx, t_name in enumerate(tool_options):
+                with tool_cols[t_idx]:
+                    is_t_sel = (current_tool == t_name)
+                    t_btn_type = "primary" if is_t_sel else "secondary"
+                    t_btn_label = f"✓ {t_name}" if is_t_sel else t_name
+                    if st.button(t_btn_label, type=t_btn_type, use_container_width=True, key=f"btn_tool_{t_idx}_{idx}"):
+                        rec["tool"] = t_name
+                        st.rerun()
+
+            if current_tool:
+                st.markdown(
+                    f"""
+                    <div style="
+                        background: rgba(2, 132, 199, 0.2);
+                        border: 1.5px solid #38bdf8;
+                        border-radius: 10px;
+                        padding: 8px 12px;
+                        margin-top: 8px;
+                        margin-bottom: 12px;
+                        color: #ffffff;
+                        font-size: 0.92rem;
+                        font-weight: 700;
+                    ">
+                        선택된 사용 장비: <span style="color: #38bdf8; font-weight: 800; text-decoration: underline;">{current_tool}</span>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
         if step.get("variants"):
             selected_decision = get_selected_decision(steps, st.session_state.records)
