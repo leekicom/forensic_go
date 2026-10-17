@@ -1101,19 +1101,37 @@ st.markdown(
     }
 
     div[data-testid="stCheckbox"] {
+        width: 100% !important;
         background-color: #0f172a !important;
-        border: 1px solid #1e293b !important;
-        border-radius: 12px !important;
-        padding: 11px 14px !important;
-        margin: 0.9rem 0 !important;
+        border: 2px solid #334155 !important;
+        border-radius: 14px !important;
+        padding: 14px 18px !important;
+        margin: 1.1rem 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+        transition: all 0.2s ease !important;
+    }
+    div[data-testid="stCheckbox"] label {
+        width: 100% !important;
+        display: flex !important;
+        align-items: center !important;
+        cursor: pointer !important;
+    }
+    div[data-testid="stCheckbox"] label p, div[data-testid="stCheckbox"] span {
+        font-size: 1.05rem !important;
+        font-weight: 700 !important;
+        color: #f1f5f9 !important;
     }
     div[data-testid="stCheckbox"]:has(input:checked) {
-        background-color: rgba(16, 185, 129, 0.12) !important;
+        background-color: rgba(16, 185, 129, 0.16) !important;
         border-color: #10b981 !important;
+        box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3) !important;
     }
+    div[data-testid="stCheckbox"]:has(input:checked) label p,
     div[data-testid="stCheckbox"]:has(input:checked) span {
         color: #34d399 !important;
-        font-weight: 700 !important;
+        font-weight: 800 !important;
     }
 
     /* ==========================================================================
@@ -1605,18 +1623,41 @@ def render_guide():
         st.markdown(format_guide_text(step["detail"]))
         if step.get("caution"):
             st.warning(f"⚠ 주의: {step['caution']}")
-        options = ["PC", "iPhone", "Android"]
-        current = device_type
-        default_index = options.index(current) if current in options else None
-        choice = st.radio("기기 유형", options, index=default_index, horizontal=True, key="device_select_radio")
-        if choice != st.session_state.device_type:
-            st.session_state.device_type = choice
-            # 기기 유형 변경 시 안전·권한 확인과 유형 선택 기록만 유지한다.
-            # 사진 기록 및 기기별 단계 기록은 새 기기에 맞게 초기화한다.
-            keep = {0, 1}
-            st.session_state.records = {k: v for k, v in st.session_state.records.items() if k in keep}
-            st.rerun()
-        device_type = st.session_state.device_type
+        
+        st.markdown("<p style='font-size: 0.95rem; font-weight: 700; color: #f1f5f9; margin-top: 1rem; margin-bottom: 8px;'>기기 유형 선택 (터치하여 선택)</p>", unsafe_allow_html=True)
+        dev_cols = st.columns(3, gap="small")
+        dev_options = ["PC", "iPhone", "Android"]
+        for d_i, d_name in enumerate(dev_options):
+            with dev_cols[d_i]:
+                is_selected = (device_type == d_name)
+                btn_type = "primary" if is_selected else "secondary"
+                btn_label = f"✓ {d_name}" if is_selected else d_name
+                if st.button(btn_label, type=btn_type, use_container_width=True, key=f"btn_dev_{d_name}"):
+                    if st.session_state.device_type != d_name:
+                        st.session_state.device_type = d_name
+                        keep = {0, 1}
+                        st.session_state.records = {k: v for k, v in st.session_state.records.items() if k in keep}
+                        st.rerun()
+
+        if device_type:
+            st.markdown(
+                f"""
+                <div style="
+                    background: rgba(2, 132, 199, 0.2);
+                    border: 1.5px solid #38bdf8;
+                    border-radius: 10px;
+                    padding: 8px 12px;
+                    margin-top: 8px;
+                    margin-bottom: 12px;
+                    color: #ffffff;
+                    font-size: 0.92rem;
+                    font-weight: 700;
+                ">
+                    선택된 기기: <span style="color: #38bdf8; font-weight: 800; text-decoration: underline;">{device_type}</span>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
     else:
         detail_text, caution_text = get_role_text(step, role)
         st.markdown(format_guide_text(detail_text))
@@ -1648,24 +1689,45 @@ def render_guide():
         if step.get("type") == "decision":
             options = step["options"]
             current = rec.get("decision")
-            default_index = options.index(current) if current in options else None
-            choice = st.radio(
-                "현장 결정",
-                options,
-                index=default_index,
-                key=f"decision_{idx}",
-            )
-            rec["decision"] = choice
-            if choice:
-                branch_text = step.get("branch_info", {}).get(choice)
+            
+            st.markdown("<p style='font-size: 0.95rem; font-weight: 700; color: #f1f5f9; margin-top: 1.1rem; margin-bottom: 8px;'>현장 결정 경로 선택 (터치하여 선택)</p>", unsafe_allow_html=True)
+            for d_idx, opt in enumerate(options):
+                is_opt_sel = (current == opt)
+                opt_type = "primary" if is_opt_sel else "secondary"
+                opt_label = f"✓ {opt}" if is_opt_sel else opt
+                if st.button(opt_label, type=opt_type, use_container_width=True, key=f"btn_dec_{d_idx}"):
+                    rec["decision"] = opt
+                    st.rerun()
+
+            if current:
+                st.markdown(
+                    f"""
+                    <div style="
+                        background: rgba(2, 132, 199, 0.2);
+                        border: 1.5px solid #38bdf8;
+                        border-radius: 10px;
+                        padding: 8px 12px;
+                        margin-top: 8px;
+                        margin-bottom: 12px;
+                        color: #ffffff;
+                        font-size: 0.92rem;
+                        font-weight: 700;
+                    ">
+                        선택된 결정: <span style="color: #38bdf8; font-weight: 800; text-decoration: underline;">{current}</span>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+                branch_text = step.get("branch_info", {}).get(current)
                 if branch_text:
                     st.success(format_guide_text(branch_text))
-                if role == "수사관" and choice == "현장 즉시 이미지 추출":
+                if role == "수사관" and current == "현장 즉시 이미지 추출":
                     st.warning(
                         "🧑‍💼 현장 즉시 이미지 추출이 선택되었습니다. 수사관의 역할은 "
                         "여기서 끝나며, 이후 추출 작업은 포렌식 담당자가 전담합니다. "
                         "수사관은 아래에서 지금까지의 리포트를 다운로드할 수 있습니다."
                     )
+
 
         if step.get("iphone_settings") and role == "포렌식분석관":
             st.markdown("##### ⚙️ iPhone 현장 필수 보존 설정 체크")
