@@ -964,39 +964,51 @@ st.markdown(
     }
 
     /* ==========================================================================
-       3. 세그먼트 컨트롤 & 토글 버튼 스타일 (라디오 동그라미 완전 대체)
+       3. 라디오 버튼 (터치 카드 버튼 스타일 - 선택 여부가 확실한 고대비 UI)
        ========================================================================== */
-    div[data-testid="stSegmentedControl"] {
-        margin-top: 6px !important;
+    div[data-testid="stRadio"] > div[role="radiogroup"] {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 6px;
     }
-    div[data-testid="stSegmentedControl"] > div {
+    div[data-testid="stRadio"] > div[role="radiogroup"] > label {
+        flex: 1 1 calc(50% - 12px);
+        min-width: 130px;
         background-color: #1e293b !important;
-        border: 2px solid #334155 !important;
-        border-radius: 16px !important;
-        padding: 5px !important;
-        gap: 8px !important;
-        min-height: 56px !important;
+        border: 2px solid #475569 !important;
+        border-radius: 14px !important;
+        padding: 12px 14px !important;
+        margin: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        cursor: pointer !important;
+        min-height: 54px !important;
+        transition: all 0.2s ease;
     }
-    div[data-testid="stSegmentedControl"] button {
-        background-color: transparent !important;
-        border: none !important;
-        border-radius: 12px !important;
+    div[data-testid="stRadio"] > div[role="radiogroup"] > label:hover {
+        background-color: #273549 !important;
+        border-color: #38bdf8 !important;
+    }
+    /* 선택되지 않은 상태의 텍스트 */
+    div[data-testid="stRadio"] > div[role="radiogroup"] > label span,
+    div[data-testid="stRadio"] > div[role="radiogroup"] > label p {
         color: #94a3b8 !important;
         font-size: 1.05rem !important;
-        font-weight: 700 !important;
-        min-height: 46px !important;
-        transition: all 0.2s ease !important;
-        box-shadow: none !important;
+        font-weight: 600 !important;
     }
-    div[data-testid="stSegmentedControl"] button:hover {
-        background-color: #273549 !important;
-        color: #ffffff !important;
+    /* 선택된 상태: 강렬한 스카이블루 배경 + 테두리 + 흰색 굵은 텍스트 */
+    div[data-testid="stRadio"] > div[role="radiogroup"] > label:has(input:checked) {
+        background: #0284c7 !important;
+        border-color: #7dd3fc !important;
+        box-shadow: 0 0 16px rgba(56, 189, 248, 0.6) !important;
     }
-    div[data-testid="stSegmentedControl"] button[aria-selected="true"] {
-        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+    div[data-testid="stRadio"] > div[role="radiogroup"] > label:has(input:checked) span,
+    div[data-testid="stRadio"] > div[role="radiogroup"] > label:has(input:checked) p {
         color: #ffffff !important;
-        font-weight: 800 !important;
-        box-shadow: 0 4px 14px rgba(56, 189, 248, 0.45) !important;
+        font-weight: 900 !important;
     }
 
     /* ==========================================================================
@@ -1204,23 +1216,41 @@ def render_start():
             value=st.session_state.case_info.get("압수 일시", now_kst().strftime("%Y-%m-%d %H:%M")),
         )
         
-        st.markdown("<p style='font-size: 0.9rem; font-weight: 700; color: #cbd5e1; margin-bottom: 6px;'>현장 수행 주체 선택</p>", unsafe_allow_html=True)
-        # st.segmented_control 또는 st.pills 형태 (동그라미 라디오 완전 대체)
-        try:
-            role = st.segmented_control(
-                "현장 수행 주체",
-                ROLE_OPTIONS,
-                default=st.session_state.role if st.session_state.role in ROLE_OPTIONS else "수사관",
-                label_visibility="collapsed",
-            )
-        except Exception:
-            # 구버전 스트림릿 호환용 셀렉트박스 카드
-            role = st.selectbox(
-                "현장 수행 주체",
-                ROLE_OPTIONS,
-                index=ROLE_OPTIONS.index(st.session_state.role) if st.session_state.role in ROLE_OPTIONS else 0,
-                label_visibility="collapsed",
-            )
+        st.markdown("<p style='font-size: 0.92rem; font-weight: 700; color: #cbd5e1; margin-bottom: 6px;'>현장 수행 주체 선택</p>", unsafe_allow_html=True)
+        # 폼 내부에서도 선택 상태가 명확한 라디오 UI (커스텀 고대비 버튼 카드)
+        role = st.radio(
+            "현장 수행 주체",
+            ROLE_OPTIONS,
+            index=ROLE_OPTIONS.index(st.session_state.role) if st.session_state.role in ROLE_OPTIONS else 0,
+            horizontal=True,
+            label_visibility="collapsed",
+        )
+        # 선택된 역할을 아래에 선명하게 안내
+        st.markdown(
+            f"""
+            <div style="
+                background: rgba(2, 132, 199, 0.18);
+                border: 1.5px solid #38bdf8;
+                border-radius: 10px;
+                padding: 10px 14px;
+                margin-top: 8px;
+                margin-bottom: 12px;
+                color: #ffffff;
+                font-size: 0.95rem;
+                font-weight: 700;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            ">
+                <span style="font-size: 1.2rem;">👉</span> 
+                선택된 수행 주체: <span style="color: #38bdf8; font-size: 1.05rem; font-weight: 800; text-decoration: underline;">{role}</span>
+                <span style="color: #94a3b8; font-size: 0.82rem; font-weight: 400; margin-left: auto;">
+                    {'(총 4단계 기본 보존)' if role == '수사관' else '(전체 7~10단계 정밀 기술)'}
+                </span>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
         
         submitted = st.form_submit_button("절차 안내 시작 ▶", use_container_width=True)
 
