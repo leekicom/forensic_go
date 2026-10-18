@@ -1291,20 +1291,6 @@ def init_state():
 def render_start():
     st.markdown("<h1 style='text-align: center; margin-bottom: 1.2rem;'>현장 압수 절차</h1>", unsafe_allow_html=True)
 
-    usage_guide_path = get_usage_guide_path()
-    if usage_guide_path:
-        gcol1, gcol2, gcol3 = st.columns([1, 2, 1])
-        with gcol2:
-            with open(usage_guide_path, "rb") as f:
-                st.download_button(
-                    "📘 프로그램 사용법 보기 (PPT)",
-                    data=f.read(),
-                    file_name=os.path.basename(usage_guide_path),
-                    mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
-                    use_container_width=True,
-                )
-        st.markdown("<div style='height: 0.6rem;'></div>", unsafe_allow_html=True)
-
     if "role" not in st.session_state or not st.session_state.role:
         st.session_state.role = "수사관"
 
@@ -1401,6 +1387,20 @@ def render_start():
         """,
         unsafe_allow_html=True,
     )
+
+    usage_guide_path = get_usage_guide_path()
+    if usage_guide_path:
+        st.markdown("<div style='height: 1.4rem;'></div>", unsafe_allow_html=True)
+        gcol1, gcol2, gcol3 = st.columns([2, 1, 2])
+        with gcol2:
+            with open(usage_guide_path, "rb") as f:
+                st.download_button(
+                    "📘 프로그램 사용법 보기",
+                    data=f.read(),
+                    file_name=os.path.basename(usage_guide_path),
+                    mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                    use_container_width=True,
+                )
 
 
 def _pdf_styles(font_name):
@@ -1680,9 +1680,12 @@ def render_guide():
                         st.session_state.device_type = d_name
                         keep = {0, 1}
                         st.session_state.records = {k: v for k, v in st.session_state.records.items() if k in keep}
+                        rec = get_record(idx)
+                        rec["done"] = True
                         st.rerun()
 
         if device_type:
+            rec["done"] = True
             st.markdown(
                 f"""
                 <div style="
