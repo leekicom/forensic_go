@@ -23,6 +23,13 @@ import io
 import os
 import zipfile
 
+KST = datetime.timezone(datetime.timedelta(hours=9))
+
+
+def now_kst():
+    """한국 표준시(KST, UTC+9) 기준 현재 시각을 반환한다."""
+    return datetime.datetime.now(KST)
+
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import mm
@@ -74,6 +81,19 @@ def ensure_korean_font_registered():
         return KOREAN_FONT_NAME
     except Exception:
         return None
+
+_USAGE_GUIDE_CANDIDATES = [
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "사용법_가이드.pptx"),
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "usage_guide.pptx"),
+]
+
+
+def get_usage_guide_path():
+    for path in _USAGE_GUIDE_CANDIDATES:
+        if os.path.exists(path):
+            return path
+    return None
+
 
 APP_TITLE = "현장 압수 절차 포렌식 매뉴얼 (Digital Forensics Seizure Guide)"
 
@@ -188,33 +208,19 @@ PC_STEPS = COMMON_PRE_STEPS + [
         },
     },
     {
-        "title": "전원 차단, 케이블 라벨링 및 쓰기방지장치 준비",
-        "detail": (
-            "- 휘발성 데이터, 암호화 상태, 시스템 안정성 및 기관 SOP를 고려해 종료 방법을\n"
-            "  결정한다. 전원 차단은 데이터 손실·변경을 유발할 수 있으므로 임의로 수행하지 않는다.\n"
-            "- 모든 케이블에 라벨을 붙이고 연결 위치를 사진으로 남긴 뒤 분리한다.\n"
-            "- 이미징 시 반드시 쓰기방지장치(Write Blocker)를 사용하여 원본이\n"
-            "  변경되지 않도록 준비한다."
-        ),
-        "caution": "노트북 배터리 분리 등 물리적 조작은 기기 구조와 보존 목표에 따라 승인된 절차로 수행한다. 쓰기방지장치 없이 원본 저장매체를 분석용 PC에 직접 연결하지 않는다.",
-    },
-    {
-        "title": "현장 이미지 추출 여부 결정",
+        "title": "전원 차단·쓰기방지 준비 및 이미지 추출 여부 결정",
         "type": "decision",
         "options": ["현장 즉시 이미지 추출", "압수 후 실험실 이송", "보류 (책임자 추가 판단 필요)"],
         "detail": (
-            "현장에서 바로 저장매체를 이미징할지, PC 또는 저장매체를 압수해\n"
-            "실험실로 옮긴 뒤 처리할지를 아래 기준으로 판단해 선택한다. 동행한\n"
-            "포렌식 분석관과 협의하여 결정한다.\n\n"
-            "판단 기준:\n"
-            "- 시간 민감성: 암호화 재잠금, 시스템 자동 종료 위험이 임박했는가\n"
-            "- 현장 장비: 공인 이미징 장비와 전문 인력이 현장에 있는가\n"
-            "- 공간/환경: 전력, 작업 테이블 등 여건이 되는가\n"
-            "- 법적 권한 범위: 영장/동의 범위가 현장 이미징까지 포함하는가\n"
-            "- 증거 복잡성: 대용량 저장소, RAID 구성 등으로 실험실 정밀 분석이\n"
-            "  필요한 상황인가"
+            "[1. 전원 차단 및 쓰기방지 준비]\n"
+            "- 휘발성 데이터, 암호화 상태, 시스템 안정성 및 기관 SOP를 고려해 종료 방법을 결정한다.\n"
+            "- 모든 케이블에 라벨을 붙이고 연결 위치를 사진으로 남긴 뒤 분리한다.\n"
+            "- 이미징 시 반드시 쓰기방지장치(Write Blocker)를 사용하여 원본이 변경되지 않도록 준비한다.\n\n"
+            "[2. 현장 이미지 추출 여부 결정]\n"
+            "- 시간 민감성, 현장 장비, 작업 환경, 영장 범위를 종합 판단하여 처리 경로를 결정한다.\n"
+            "- 결정 권한은 현장 책임자에게 있으며, 애매하면 '보류'를 선택하고 지시를 받는다."
         ),
-        "caution": "결정 권한은 현장 책임자(또는 기관 SOP가 지정한 담당자)에게 있다. 애매하면 '보류'를 선택하고 책임자 지시를 받는다.",
+        "caution": "노트북 배터리 분리 등 물리적 조작은 승인된 절차로 수행한다. 쓰기방지장치 없이 원본 저장매체를 분석용 PC에 직접 연결하지 않는다.",
         "branch_info": {
             "현장 즉시 이미지 추출": (
                 "→ 전력, 공간 등 현장 작업 여건을 지원하며 공인 장비로 이미징한다.\n"
@@ -340,6 +346,24 @@ IPHONE_STEPS = COMMON_PRE_STEPS + [
             "경우 조작 전후 과정을 반드시 촬영/기록한다. 충전 중에도 네트워크 "
             "격리 상태가 유지되는지 확인한다."
         ),
+        "role_override": {
+            "포렌식분석관": {
+                "detail": (
+                    "[1. 화면 꺼짐(자동 잠금) 방지 설정]\n"
+                    "- 경로: '설정' > '디스플레이 및 밝기' > '자동 잠금' > '안 함'으로 변경\n"
+                    "- 목적: 화면이 꺼져 재잠금되거나 BFU(Before First Unlock) 상태로 진입하는 것을 방지\n\n"
+                    "[2. 네트워크 완전 차단 (제어 센터 사용 금지)]\n"
+                    "- ⚠️ 주의: 제어 센터(상단 스와이프)에서 끄면 익일 새벽 자동 재연결되므로 절대 금지!\n"
+                    "- 반드시 '설정' 앱에 직접 들어가서 차단:\n"
+                    "  · '설정' > 'Wi-Fi' > 끔(OFF)\n"
+                    "  · '설정' > 'Bluetooth' > 끔(OFF)\n"
+                    "  · '설정' > '에어플레인 모드' > 켬(ON)\n\n"
+                    "[3. 전원 및 배터리 상시 유지]\n"
+                    "- 전원을 끄거나 재부팅하지 않고 보조배터리 즉시 연결 (AFU 상태 유지)"
+                ),
+                "caution": "제어 센터 토글이 아닌 반드시 [설정] 앱 내부에서 Wi-Fi/Bluetooth를 비활성화해야 원격 초기화(Find My) 및 자동 재연결을 완전히 방지할 수 있습니다.",
+            },
+        },
     },
     {
         "title": "기기 식별 및 보안상태 확인 (포렌식 분석관과 공동 진행)",
@@ -358,9 +382,31 @@ IPHONE_STEPS = COMMON_PRE_STEPS + [
         "role_override": {
             "포렌식분석관": {
                 "detail": (
-                    "- 모델명, iOS 버전, 일련번호/IMEI(화면/기기 라벨에서 확인 가능한\n"
-                    "  범위), Face ID/Touch ID 사용 여부, 화면에 노출된 Apple ID/\n"
-                    "  iCloud 계정 정보를 직접 확인·기록한다."
+                    "[1. 기기 기본 식별]\n"
+                    "- 모델명 확인 경로: '설정' > '일반' > '정보' > 상단 '모델 이름' 항목\n"
+                    "  (또는 기기 뒷면 각인, SIM 트레이 각인에서도 모델 번호 확인 가능)\n"
+                    "- iOS 버전 확인 경로: '설정' > '일반' > '정보' > 'iOS 버전' 항목\n"
+                    "- 일련번호/IMEI 확인 경로: '설정' > '일반' > '정보' 하단의\n"
+                    "  '일련번호' / 'IMEI' 항목 (또는 SIM 트레이, 기기 뒷면 각인)\n\n"
+                    "[2. Face ID / Touch ID 상태 확인 및 비활성화]\n"
+                    "- 경로: '설정' > 'Face ID 및 암호'(기종에 따라 'Touch ID 및 암호')\n"
+                    "- 진입 시 기기 암호 입력이 요구되며, 암호를 입력해야 다음 화면으로\n"
+                    "  이동한다(기기가 이미 잠금해제된 상태에서만 진입 가능).\n"
+                    "- 화면에서 Face ID/Touch ID 사용 여부와 등록된 용도(잠금해제,\n"
+                    "  Apple Pay, App 보기 등)를 확인·기록한다.\n"
+                    "- 반복 인증 실패가 누적되면 기기가 자동으로 암호 입력만 허용하는\n"
+                    "  상태로 전환될 수 있으므로, 추출 전 접근 방식을 일원화하려면\n"
+                    "  같은 화면에서 '잠금해제' 토글을 꺼서 이후에는 암호로만 열리도록\n"
+                    "  전환하는 것을 검토한다(토글 OFF).\n\n"
+                    "[3. 계정 정보 확인]\n"
+                    "- 경로: '설정' 최상단 Apple ID 배너에서 로그인된 iCloud 계정을 확인\n"
+                    "- 화면에 노출된 정보만 기록하고, 암호나 보안코드를 추가로 입력하지\n"
+                    "  않는다."
+                ),
+                "caution": (
+                    "위 설정 변경은 기기가 이미 잠금해제된 상태에서만 가능하다. 화면이 "
+                    "잠겨 있거나 암호를 모르는 상태에서는 강제로 접근을 시도하지 않는다. "
+                    "화면 조작 전후 과정을 반드시 사진으로 촬영해 기록한다."
                 ),
             },
         },
@@ -560,10 +606,20 @@ ANDROID_STEPS = COMMON_PRE_STEPS + [
         "role_override": {
             "포렌식분석관": {
                 "detail": (
-                    "- 제조사/모델명, Android 버전, IMEI/시리얼, USB 디버깅 활성화\n"
-                    "  여부, 루팅 여부(추정), 개발자 옵션 활성화 여부를 직접\n"
-                    "  확인·기록한다."
+                    "[1. 기기 기본 식별]\n"
+                    "- 제조사, 모델명, Android 버전, IMEI/시리얼 번호 확인 및 기록\n\n"
+                    "[2. 개발자 옵션 활성화 방법 및 확인]\n"
+                    "- 경로: '설정' > '휴대전화 정보' > '소프트웨어 정보' > '빌드번호(Build number)'를 연속 7회 탭\n"
+                    "- 패턴/PIN 입력 후 \"개발자 모드를 켰습니다\" 알림 확인\n"
+                    "- '설정' 최하단에 [개발자 옵션] 메뉴가 정상 생성되었는지 확인\n\n"
+                    "[3. USB 디버깅 활성화 설정]\n"
+                    "- 경로: '설정' > '개발자 옵션' > [USB 디버깅] 토글 스위치 켬(ON)\n"
+                    "- 팝업창(\"USB 디버깅을 허용하시겠습니까?\")에서 [확인] 선택\n"
+                    "- 분석 PC/포렌식 장비 연결 시: \"이 컴퓨터에서 항상 허용\" 체크 후 [허용] 클릭\n\n"
+                    "[4. 기타 보안 상태 점검]\n"
+                    "- 루팅(Rooting) 여부 확인, 잠금 방식(패턴/PIN/생체인증), Knox 워런티 트리거 여부 점검"
                 ),
+                "caution": "화면이 잠겨 있거나 BFU 상태에서는 설정을 변경할 수 없으므로 강제 조작하지 말고, 화면 조작 전후 과정을 반드시 사진 촬영으로 기록한다.",
             },
         },
     },
@@ -820,7 +876,11 @@ def get_skipped_step_indices(steps, records, role):
 
 
 def get_visible_step_indices(steps, records, role):
-    """생략 대상만 제외한 전체 단계 인덱스. 역할별 진행/다운로드 제한은 호출부에서 적용한다."""
+    """생략 대상만 제외한 전체 단계 인덱스. 수사관은 4단계까지만 표시한다."""
+    if role == "수사관":
+        effective_last = get_effective_last_index(steps, records, role)
+        return [i for i in range(len(steps)) if i <= effective_last]
+
     skipped = get_skipped_step_indices(steps, records, role)
     return [i for i in range(len(steps)) if i not in skipped]
 
@@ -833,17 +893,380 @@ st.set_page_config(page_title=APP_TITLE, page_icon="🔎", layout="centered")
 st.markdown(
     """
     <style>
-    /* 모바일에서 한글 단어가 중간에서 갈라지지 않도록 하고 제목 크기를 조정 */
-    .stMarkdown, .stAlert, [data-testid="stCaptionContainer"] {
+    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
+
+    /* ==========================================================================
+       1. 글로벌 테마 & 타이포그래피 (http://127.0.0.1:5000 스타일 일치)
+       Dark Slate 950 (#020617) + Teal (#14b8a6) & Indigo (#6366f1)
+       ========================================================================== */
+    .stApp {
+        background-color: #020617 !important;
+        color: #f8fafc !important;
+        font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif !important;
+    }
+
+    html, body, [class*="css"], .stMarkdown, .stAlert, [data-testid="stCaptionContainer"], button, input, textarea, select {
+        font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif !important;
         word-break: keep-all;
         overflow-wrap: break-word;
+        letter-spacing: -0.01em;
     }
-    @media (max-width: 640px) {
-        .block-container { padding-left: 1rem; padding-right: 1rem; }
-        h1 { font-size: 1.65rem !important; line-height: 1.3 !important; }
-        h2 { font-size: 1.25rem !important; line-height: 1.4 !important; }
-        h3 { font-size: 1.1rem !important; line-height: 1.4 !important; }
-        .stButton button { min-height: 2.8rem; white-space: normal; }
+
+    /* 상단 스트림릿 기본 헤더/푸터 숨김 */
+    header[data-testid="stHeader"] {
+        display: none !important;
+    }
+    #MainMenu, footer {
+        visibility: hidden !important;
+        height: 0 !important;
+    }
+
+    /* 모바일 및 화면 컨테이너 (최대폭 580px, 중앙 정렬, 적절한 여백) */
+    .block-container {
+        padding-top: 1.5rem !important;
+        padding-bottom: 4rem !important;
+        padding-left: 1.15rem !important;
+        padding-right: 1.15rem !important;
+        max-width: 580px !important;
+        margin: 0 auto !important;
+    }
+
+    /* 제목 및 텍스트 가독성 */
+    h1 {
+        font-size: 1.55rem !important;
+        font-weight: 800 !important;
+        color: #f8fafc !important;
+        letter-spacing: -0.02em !important;
+        margin-bottom: 0.25rem !important;
+    }
+    h2 {
+        font-size: 1.25rem !important;
+        font-weight: 700 !important;
+        color: #f1f5f9 !important;
+        letter-spacing: -0.015em !important;
+    }
+    h3 {
+        font-size: 1.1rem !important;
+        font-weight: 700 !important;
+        color: #e2e8f0 !important;
+        letter-spacing: -0.015em !important;
+    }
+    [data-testid="stCaptionContainer"] p {
+        color: #94a3b8 !important;
+        font-size: 0.85rem !important;
+    }
+    .stMarkdown p, .stMarkdown li {
+        color: #e2e8f0 !important;
+        font-size: 0.95rem !important;
+        line-height: 1.65 !important;
+    }
+
+    /* ==========================================================================
+       2. 카드 & 폼 스타일 (Slate 900 Card + Slate 800 Border)
+       ========================================================================== */
+    [data-testid="stForm"] {
+        background-color: #0f172a !important;
+        border: 1px solid #1e293b !important;
+        border-radius: 18px !important;
+        padding: 1.35rem 1.25rem !important;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4) !important;
+    }
+
+    /* 폼 입력창 (사건번호, 수사관 등) */
+    .stTextInput label, .stTextArea label, .stSelectbox label, .stRadio label {
+        color: #cbd5e1 !important;
+        font-weight: 600 !important;
+        font-size: 0.86rem !important;
+    }
+
+    .stTextInput input, .stTextArea textarea, .stSelectbox > div > div {
+        background-color: #1e293b !important;
+        border: 1px solid #334155 !important;
+        border-radius: 12px !important;
+        color: #f8fafc !important;
+        font-size: 0.94rem !important;
+        padding: 10px 13px !important;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .stTextInput input:focus, .stTextArea textarea:focus {
+        border-color: #38bdf8 !important;
+        box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.3) !important;
+    }
+
+    /* ==========================================================================
+       3. 라디오 버튼 (터치 카드 버튼 스타일 - 선택 여부가 확실한 고대비 UI)
+       ========================================================================== */
+    div[data-testid="stRadio"] > div[role="radiogroup"] {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 6px;
+    }
+    div[data-testid="stRadio"] > div[role="radiogroup"] > label {
+        flex: 1 1 calc(50% - 12px);
+        min-width: 130px;
+        background-color: #1e293b !important;
+        border: 2px solid #475569 !important;
+        border-radius: 14px !important;
+        padding: 12px 14px !important;
+        margin: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        cursor: pointer !important;
+        min-height: 54px !important;
+        transition: all 0.2s ease;
+    }
+    div[data-testid="stRadio"] > div[role="radiogroup"] > label:hover {
+        background-color: #273549 !important;
+        border-color: #38bdf8 !important;
+    }
+    /* 선택되지 않은 상태의 텍스트 */
+    div[data-testid="stRadio"] > div[role="radiogroup"] > label span,
+    div[data-testid="stRadio"] > div[role="radiogroup"] > label p {
+        color: #94a3b8 !important;
+        font-size: 1.05rem !important;
+        font-weight: 600 !important;
+    }
+    /* 선택된 상태: 강렬한 스카이블루 배경 + 테두리 + 흰색 굵은 텍스트 */
+    div[data-testid="stRadio"] > div[role="radiogroup"] > label:has(input:checked) {
+        background: #0284c7 !important;
+        border-color: #7dd3fc !important;
+        box-shadow: 0 0 16px rgba(56, 189, 248, 0.6) !important;
+    }
+    div[data-testid="stRadio"] > div[role="radiogroup"] > label:has(input:checked) span,
+    div[data-testid="stRadio"] > div[role="radiogroup"] > label:has(input:checked) p {
+        color: #ffffff !important;
+        font-weight: 900 !important;
+    }
+
+    /* ==========================================================================
+       4. 버튼 스타일링 (흰색 배경 완전 제거 & 고대비 다크/스카이블루 일괄 적용)
+       ========================================================================== */
+    /* 모든 버튼 공통 베이스 (흰색 배경 원천 차단) */
+    button, 
+    .stButton button, 
+    [data-testid="stFormSubmitButton"] button, 
+    [data-testid="stDownloadButton"] button, 
+    [data-testid^="baseButton"] {
+        background-color: #1e293b !important;
+        background-image: none !important;
+        color: #f8fafc !important;
+        border: 1px solid #475569 !important;
+        border-radius: 12px !important;
+        font-size: 0.96rem !important;
+        font-weight: 700 !important;
+        min-height: 48px !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+        transition: all 0.2s ease !important;
+    }
+    button:active, .stButton button:active {
+        transform: scale(0.98) !important;
+    }
+
+    /* [메인 액션 버튼]: 시작하기, 다음 단계, 다운로드 버튼 (선명한 스카이블루) */
+    [data-testid="stFormSubmitButton"] button,
+    div[data-testid="column"]:nth-child(2) .stButton button,
+    [data-testid="stDownloadButton"] button,
+    button[kind="primary"] {
+        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+        color: #ffffff !important;
+        border: 1px solid #38bdf8 !important;
+        box-shadow: 0 4px 14px rgba(2, 132, 199, 0.45) !important;
+    }
+    /* 시작하기 버튼 특별 대형화 (모바일 터치 최적화) */
+    [data-testid="stFormSubmitButton"] button {
+        min-height: 60px !important;
+        font-size: 1.15rem !important;
+        border-radius: 14px !important;
+        margin-top: 10px !important;
+        letter-spacing: -0.01em !important;
+    }
+    [data-testid="stFormSubmitButton"] button:hover,
+    div[data-testid="column"]:nth-child(2) .stButton button:hover,
+    [data-testid="stDownloadButton"] button:hover,
+    button[kind="primary"]:hover {
+        background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%) !important;
+        border-color: #7dd3fc !important;
+        color: #ffffff !important;
+        box-shadow: 0 6px 18px rgba(56, 189, 248, 0.5) !important;
+    }
+
+    /* [보조 버튼]: 이전 단계, 처음으로, 한눈에 보기 이동 버튼 */
+    div[data-testid="column"]:nth-child(1) .stButton button,
+    [data-testid="stExpander"] .stButton button,
+    button[kind="secondary"] {
+        background-color: #1e293b !important;
+        border: 1px solid #475569 !important;
+        color: #f1f5f9 !important;
+    }
+    div[data-testid="column"]:nth-child(1) .stButton button:hover,
+    [data-testid="stExpander"] .stButton button:hover,
+    button[kind="secondary"]:hover {
+        background-color: #334155 !important;
+        color: #ffffff !important;
+        border-color: #94a3b8 !important;
+    }
+
+    /* [비활성화 버튼]: 첫 단계에서 이전 버튼 등 */
+    button:disabled, button[disabled], .stButton button:disabled {
+        background-color: #0f172a !important;
+        background-image: none !important;
+        color: #475569 !important;
+        border: 1px solid #1e293b !important;
+        box-shadow: none !important;
+        cursor: not-allowed !important;
+        opacity: 0.5 !important;
+    }
+
+    /* ==========================================================================
+       5. 프로그레스 바 & 체크박스
+       ========================================================================== */
+    div[data-testid="stProgress"] > div > div > div > div {
+        background: linear-gradient(90deg, #38bdf8 0%, #0284c7 100%) !important;
+        border-radius: 9999px !important;
+        height: 7px !important;
+        box-shadow: 0 0 10px rgba(56, 189, 248, 0.5) !important;
+    }
+
+    div[data-testid="stCheckbox"] {
+        width: 100% !important;
+        background-color: #0f172a !important;
+        border: 2px solid #334155 !important;
+        border-radius: 14px !important;
+        padding: 14px 18px !important;
+        margin: 1.1rem 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+        transition: all 0.2s ease !important;
+    }
+    div[data-testid="stCheckbox"] label {
+        width: 100% !important;
+        display: flex !important;
+        align-items: center !important;
+        cursor: pointer !important;
+    }
+    div[data-testid="stCheckbox"] label p, div[data-testid="stCheckbox"] span {
+        font-size: 1.05rem !important;
+        font-weight: 700 !important;
+        color: #f1f5f9 !important;
+    }
+    div[data-testid="stCheckbox"]:has(input:checked) {
+        background-color: rgba(16, 185, 129, 0.16) !important;
+        border-color: #10b981 !important;
+        box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3) !important;
+    }
+    div[data-testid="stCheckbox"]:has(input:checked) label p,
+    div[data-testid="stCheckbox"]:has(input:checked) span {
+        color: #34d399 !important;
+        font-weight: 800 !important;
+    }
+
+    /* ==========================================================================
+       6. 알림 상자 (주의, 성공, 안내) - 높은 명도 대비
+       ========================================================================== */
+    [data-testid="stAlert"] {
+        border-radius: 14px !important;
+        padding: 0.85rem 1.1rem !important;
+        background-color: #0f172a !important;
+        border: 1px solid #334155 !important;
+    }
+    div[data-baseweb="notification"]:has(div.stAlert) {
+        background-color: #0f172a !important;
+    }
+    /* 주의(경고) */
+    div[data-testid="stAlert"]:has([aria-label="warning"]), div[data-testid="stAlert"]:has(svg[data-testid="WarningIcon"]) {
+        border-left: 4px solid #f59e0b !important;
+        background: rgba(245, 158, 11, 0.08) !important;
+    }
+    /* 성공 */
+    div[data-testid="stAlert"]:has([aria-label="success"]) {
+        border-left: 4px solid #10b981 !important;
+        background: rgba(16, 185, 129, 0.08) !important;
+    }
+    /* 안내 */
+    div[data-testid="stAlert"]:has([aria-label="info"]) {
+        border-left: 4px solid #38bdf8 !important;
+        background: rgba(2, 132, 199, 0.1) !important;
+    }
+
+    /* ==========================================================================
+       7. 파일 업로더 & 사진 썸네일 & 다운로드 버튼
+       ========================================================================== */
+    [data-testid="stFileUploader"] {
+        background-color: transparent !important;
+        border: none !important;
+        padding: 0 !important;
+    }
+    /* 라벨 텍스트: 약간 작고 깔끔한 밝은 화이트 (#ffffff, 0.88rem) */
+    [data-testid="stFileUploader"] label,
+    [data-testid="stFileUploader"] label p {
+        color: #f1f5f9 !important;
+        font-weight: 600 !important;
+        font-size: 0.88rem !important;
+        margin-bottom: 6px !important;
+    }
+    /* 흰 배경 박스(Dropzone section)를 어두운 슬레이트(#1e293b) 배경으로 변경 */
+    [data-testid="stFileUploader"] section {
+        background-color: #1e293b !important;
+        border: 1.5px dashed #38bdf8 !important;
+        border-radius: 14px !important;
+        padding: 1.1rem !important;
+    }
+    /* 드래그 앤 드롭 내부 텍스트 */
+    [data-testid="stFileUploader"] section div,
+    [data-testid="stFileUploader"] section span {
+        color: #cbd5e1 !important;
+        font-weight: 500 !important;
+    }
+    /* 파일 찾아보기(Browse files) 버튼 스타일링: 어두운 슬레이트 카드 버튼 */
+    [data-testid="stFileUploader"] section button {
+        background-color: #0f172a !important;
+        color: #38bdf8 !important;
+        border: 1px solid #38bdf8 !important;
+        border-radius: 10px !important;
+        font-weight: 700 !important;
+        min-height: 40px !important;
+        padding: 6px 14px !important;
+    }
+    [data-testid="stFileUploader"] section button:hover {
+        background-color: #0284c7 !important;
+        color: #ffffff !important;
+    }
+    /* 파일 크기 제한 및 확장자 안내 텍스트 (밝은 옐로우) */
+    [data-testid="stFileUploader"] small {
+        color: #fef08a !important;
+        font-weight: 600 !important;
+        font-size: 0.8rem !important;
+    }
+    [data-testid="stImage"] img {
+        border-radius: 12px !important;
+        border: 1px solid #1e293b !important;
+    }
+
+    [data-testid="stDownloadButton"] button {
+        min-height: 48px !important;
+        border-radius: 12px !important;
+        font-weight: 700 !important;
+        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+        color: #ffffff !important;
+        border: 1px solid #38bdf8 !important;
+        box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35) !important;
+    }
+    [data-testid="stDownloadButton"] button:hover {
+        background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%) !important;
+        box-shadow: 0 6px 18px rgba(56, 189, 248, 0.45) !important;
+    }
+
+    [data-testid="stExpander"] {
+        border-radius: 14px !important;
+        border: 1px solid #1e293b !important;
+        background-color: #0f172a !important;
+    }
+    hr {
+        border-color: #1e293b !important;
     }
     </style>
     """,
@@ -866,24 +1289,69 @@ def init_state():
 
 
 def render_start():
-    st.title("현장 압수 절차")
+    st.markdown("<h1 style='text-align: center; margin-bottom: 1.2rem;'>현장 압수 절차</h1>", unsafe_allow_html=True)
+
+    if "role" not in st.session_state or not st.session_state.role:
+        st.session_state.role = "수사관"
+
+    # 1. 폼 밖에서 독립된 전용 선택 버튼 제공 (라디오 컴포넌트 완전 배제)
+    st.markdown("<p style='font-size: 0.95rem; font-weight: 700; color: #f1f5f9; margin-bottom: 8px;'>현장 수행 주체 선택 (터치하여 선택)</p>", unsafe_allow_html=True)
+    rcol1, rcol2 = st.columns(2, gap="small")
+    with rcol1:
+        is_investigator = (st.session_state.role == "수사관")
+        label_inv = "✓ 수사관" if is_investigator else "수사관"
+        type_inv = "primary" if is_investigator else "secondary"
+        if st.button(label_inv, type=type_inv, use_container_width=True, key="btn_role_investigator"):
+            st.session_state.role = "수사관"
+            st.rerun()
+    with rcol2:
+        is_analyst = (st.session_state.role == "포렌식분석관")
+        label_ana = "✓ 포렌식분석관" if is_analyst else "포렌식분석관"
+        type_ana = "primary" if is_analyst else "secondary"
+        if st.button(label_ana, type=type_ana, use_container_width=True, key="btn_role_analyst"):
+            st.session_state.role = "포렌식분석관"
+            st.rerun()
+
+    # 현재 선택 상태를 밝은 하늘색 카드 형태로 표시
+    current_role = st.session_state.role
+    st.markdown(
+        f"""
+        <div style="
+            background: rgba(2, 132, 199, 0.25);
+            border: 2px solid #38bdf8;
+            border-radius: 12px;
+            padding: 10px 14px;
+            margin-top: 8px;
+            margin-bottom: 16px;
+            color: #ffffff;
+            font-size: 0.98rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        ">
+            <div>
+                현재 선택: <span style="color: #38bdf8; font-size: 1.12rem; font-weight: 800; text-decoration: underline;">{current_role}</span>
+            </div>
+            <span style="color: #fef08a; font-size: 0.85rem; font-weight: 600;">
+                {'(총 4단계 진행)' if current_role == '수사관' else '(전체 7~10단계 진행)'}
+            </span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
     with st.form("case_info_form"):
-        case_number = st.text_input("사건번호")
-        officer = st.text_input("담당 수사관 (성명/소속)")
-        suspect = st.text_input("피의자(소지자) 성명")
-        location = st.text_input("현장 위치")
+        case_number = st.text_input("사건번호", value=st.session_state.case_info.get("사건번호", ""))
+        officer = st.text_input("담당 수사관 (성명/소속)", value=st.session_state.case_info.get("담당 수사관", ""))
+        suspect = st.text_input("피의자(소지자) 성명", value=st.session_state.case_info.get("피의자(소지자) 성명", ""))
+        location = st.text_input("현장 위치", value=st.session_state.case_info.get("현장 위치", ""))
         seized_at = st.text_input(
             "압수 일시 (YYYY-MM-DD HH:MM)",
-            value=datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
+            value=st.session_state.case_info.get("압수 일시", now_kst().strftime("%Y-%m-%d %H:%M")),
         )
-        role = st.radio(
-            "현장 수행 주체",
-            ROLE_OPTIONS,
-            horizontal=True,
-            help="수사관: 현장 보존·협의 중심 절차. 포렌식분석관: 본인이 직접 기술 항목과 추출 작업을 수행하는 절차.",
-        )
-        submitted = st.form_submit_button("절차 안내 시작 ▶")
+        
+        submitted = st.form_submit_button("절차 안내 시작 ▶", use_container_width=True)
 
     if submitted:
         st.session_state.case_info = {
@@ -894,17 +1362,45 @@ def render_start():
             "압수 일시": seized_at,
         }
         st.session_state.device_type = None  # 현장 안전·권한 확인 후 기기 유형 선택
-        st.session_state.role = role
         st.session_state.current_index = 0
         st.session_state.records = {}
         st.session_state.stage = "guide"
         st.rerun()
 
-    st.info(
-        "※ 본 프로그램은 현장 보존 절차(사진기록, 전원상태, 네트워크 차단, 해시기록, "
-        "Chain of Custody 등) 안내용입니다. 잠금해제·데이터추출 등 기술적 작업은 "
-        "법적 권한을 가진 전문 인력이 공인 장비로 수행해야 합니다."
+    st.markdown(
+        """
+        <div style="
+            background: rgba(245, 158, 11, 0.12);
+            border: 1.5px solid #f59e0b;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-top: 18px;
+            color: #fef08a;
+            font-size: 0.92rem;
+            line-height: 1.55;
+            font-weight: 500;
+        ">
+            <span style="color: #fbbf24; font-weight: 800; font-size: 1rem; margin-right: 4px;">⚡ 현장 안내 요약</span><br>
+            • 본 가이드는 현장 보존(사진·전원·네트워크·해시·Chain of Custody) 기록용입니다.<br>
+            • 잠금해제 및 데이터 추출은 공인 장비와 권한을 가진 전문 인력이 수행해야 합니다.
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
+
+    usage_guide_path = get_usage_guide_path()
+    if usage_guide_path:
+        st.markdown("<div style='height: 1.4rem;'></div>", unsafe_allow_html=True)
+        gcol1, gcol2, gcol3 = st.columns([2, 1, 2])
+        with gcol2:
+            with open(usage_guide_path, "rb") as f:
+                st.download_button(
+                    "📘 프로그램 사용법 보기",
+                    data=f.read(),
+                    file_name=os.path.basename(usage_guide_path),
+                    mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                    use_container_width=True,
+                )
 
 
 def _pdf_styles(font_name):
@@ -995,7 +1491,7 @@ def build_pdf_bytes():
     story.append(Spacer(1, 10))
 
     meta_rows = [
-        ["생성 시각", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")],
+        ["생성 시각", now_kst().strftime("%Y-%m-%d %H:%M:%S")],
         ["기기 유형", device_type],
         ["현장 수행 주체", role or "-"],
     ]
@@ -1050,6 +1546,17 @@ def build_pdf_bytes():
             story.append(Spacer(1, 3))
             story.append(Paragraph(f"⚠ 주의: {_esc(caution_text)}", styles["caution"]))
 
+        if step.get("iphone_settings") and role == "포렌식분석관":
+            iphone_checks = []
+            if rec.get("iphone_autolock"): iphone_checks.append("자동잠금: 안함")
+            if rec.get("iphone_airplane"): iphone_checks.append("에어플레인: ON")
+            if rec.get("iphone_wifi_off"): iphone_checks.append("Wi-Fi: 설정앱 OFF")
+            if rec.get("iphone_bt_off"): iphone_checks.append("Bluetooth: 설정앱 OFF")
+            if rec.get("iphone_charging"): iphone_checks.append("상시 충전 연결")
+            if iphone_checks:
+                story.append(Spacer(1, 3))
+                story.append(Paragraph(f"⚙ iPhone 설정 확인: {_esc(', '.join(iphone_checks))}", styles["decision"]))
+
         if step.get("type") == "decision" and rec.get("decision"):
             story.append(Spacer(1, 3))
             story.append(Paragraph(f"▶ 선택된 결정: {_esc(rec['decision'])}", styles["decision"]))
@@ -1098,8 +1605,7 @@ def build_pdf_bytes():
     story.append(Paragraph("서명란", styles["step_title"]))
     story.append(Spacer(1, 10))
     sign_table = Table(
-        [["담당 수사관 서명:", "", "일시:", ""],
-         ["입회인 서명:", "", "일시:", ""]],
+        [["담당 수사관 서명:", "", "일시:", ""]],
         colWidths=[30 * mm, 50 * mm, 15 * mm, 45 * mm],
     )
     sign_table.setStyle(TableStyle([
@@ -1116,6 +1622,27 @@ def build_pdf_bytes():
     return buffer.getvalue()
 
 
+def scroll_to_top():
+    """다음 단계로 넘어갈 때 페이지를 맨 위로 스크롤한다."""
+    st.html(
+        """
+        <script>
+            const doc = window.parent.document;
+            const targets = [
+                doc.querySelector('[data-testid="stAppViewContainer"]'),
+                doc.querySelector('section.main'),
+                doc.scrollingElement,
+                doc.documentElement,
+                doc.body,
+            ];
+            targets.forEach((t) => { if (t) { t.scrollTop = 0; } });
+            window.parent.scrollTo(0, 0);
+        </script>
+        """,
+        unsafe_allow_javascript=True,
+    )
+
+
 def get_record(idx):
     """전역 단계 인덱스에 대한 기록을 반환한다. 없으면 기본값으로 만든다.
     (1단계에서 기기 유형을 고르기 전에는 기기별 단계가 아직 존재하지 않으므로
@@ -1128,6 +1655,9 @@ def get_record(idx):
 
 
 def render_guide():
+    if st.session_state.pop("_scroll_to_top", False):
+        scroll_to_top()
+
     role = st.session_state.role
     device_type = st.session_state.device_type
     steps = get_full_steps(device_type)
@@ -1160,18 +1690,44 @@ def render_guide():
         st.markdown(format_guide_text(step["detail"]))
         if step.get("caution"):
             st.warning(f"⚠ 주의: {step['caution']}")
-        options = ["PC", "iPhone", "Android"]
-        current = device_type
-        default_index = options.index(current) if current in options else None
-        choice = st.radio("기기 유형", options, index=default_index, horizontal=True, key="device_select_radio")
-        if choice != st.session_state.device_type:
-            st.session_state.device_type = choice
-            # 기기 유형 변경 시 안전·권한 확인과 유형 선택 기록만 유지한다.
-            # 사진 기록 및 기기별 단계 기록은 새 기기에 맞게 초기화한다.
-            keep = {0, 1}
-            st.session_state.records = {k: v for k, v in st.session_state.records.items() if k in keep}
-            st.rerun()
-        device_type = st.session_state.device_type
+        
+        st.markdown("<p style='font-size: 0.95rem; font-weight: 700; color: #f1f5f9; margin-top: 1rem; margin-bottom: 8px;'>기기 유형 선택 (터치하여 선택)</p>", unsafe_allow_html=True)
+        dev_cols = st.columns(3, gap="small")
+        dev_options = ["PC", "iPhone", "Android"]
+        for d_i, d_name in enumerate(dev_options):
+            with dev_cols[d_i]:
+                is_selected = (device_type == d_name)
+                btn_type = "primary" if is_selected else "secondary"
+                btn_label = f"✓ {d_name}" if is_selected else d_name
+                if st.button(btn_label, type=btn_type, use_container_width=True, key=f"btn_dev_{d_name}"):
+                    if st.session_state.device_type != d_name:
+                        st.session_state.device_type = d_name
+                        keep = {0, 1}
+                        st.session_state.records = {k: v for k, v in st.session_state.records.items() if k in keep}
+                        rec = get_record(idx)
+                        rec["done"] = True
+                        st.rerun()
+
+        if device_type:
+            rec["done"] = True
+            st.markdown(
+                f"""
+                <div style="
+                    background: rgba(2, 132, 199, 0.2);
+                    border: 1.5px solid #38bdf8;
+                    border-radius: 10px;
+                    padding: 8px 12px;
+                    margin-top: 8px;
+                    margin-bottom: 12px;
+                    color: #ffffff;
+                    font-size: 0.92rem;
+                    font-weight: 700;
+                ">
+                    선택된 기기: <span style="color: #38bdf8; font-weight: 800; text-decoration: underline;">{device_type}</span>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
     else:
         detail_text, caution_text = get_role_text(step, role)
         st.markdown(format_guide_text(detail_text))
@@ -1181,15 +1737,37 @@ def render_guide():
         if step.get("tool_select") and role == "포렌식분석관":
             tool_options = TOOLS_BY_DEVICE.get(device_type, [])
             current_tool = rec.get("tool")
-            tool_index = tool_options.index(current_tool) if current_tool in tool_options else None
-            chosen_tool = st.selectbox(
-                "사용 장비 선택 (보유 포렌식 도구)",
-                tool_options,
-                index=tool_index,
-                key=f"tool_{idx}",
-                placeholder="도구를 선택하세요",
-            )
-            rec["tool"] = chosen_tool
+            
+            st.markdown("<p style='font-size: 0.95rem; font-weight: 700; color: #f1f5f9; margin-top: 1rem; margin-bottom: 8px;'>사용 장비 선택 (보유 포렌식 도구 터치 선택)</p>", unsafe_allow_html=True)
+            tool_cols = st.columns(len(tool_options), gap="small")
+            for t_idx, t_name in enumerate(tool_options):
+                with tool_cols[t_idx]:
+                    is_t_sel = (current_tool == t_name)
+                    t_btn_type = "primary" if is_t_sel else "secondary"
+                    t_btn_label = f"✓ {t_name}" if is_t_sel else t_name
+                    if st.button(t_btn_label, type=t_btn_type, use_container_width=True, key=f"btn_tool_{t_idx}_{idx}"):
+                        rec["tool"] = t_name
+                        st.rerun()
+
+            if current_tool:
+                st.markdown(
+                    f"""
+                    <div style="
+                        background: rgba(2, 132, 199, 0.2);
+                        border: 1.5px solid #38bdf8;
+                        border-radius: 10px;
+                        padding: 8px 12px;
+                        margin-top: 8px;
+                        margin-bottom: 12px;
+                        color: #ffffff;
+                        font-size: 0.92rem;
+                        font-weight: 700;
+                    ">
+                        선택된 사용 장비: <span style="color: #38bdf8; font-weight: 800; text-decoration: underline;">{current_tool}</span>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
         if step.get("variants"):
             selected_decision = get_selected_decision(steps, st.session_state.records)
@@ -1203,45 +1781,97 @@ def render_guide():
         if step.get("type") == "decision":
             options = step["options"]
             current = rec.get("decision")
-            default_index = options.index(current) if current in options else None
-            choice = st.radio(
-                "현장 결정",
-                options,
-                index=default_index,
-                key=f"decision_{idx}",
-            )
-            rec["decision"] = choice
-            if choice:
-                branch_text = step.get("branch_info", {}).get(choice)
+            
+            st.markdown("<p style='font-size: 0.95rem; font-weight: 700; color: #f1f5f9; margin-top: 1.1rem; margin-bottom: 8px;'>현장 결정 경로 선택 (터치하여 선택)</p>", unsafe_allow_html=True)
+            for d_idx, opt in enumerate(options):
+                is_opt_sel = (current == opt)
+                opt_type = "primary" if is_opt_sel else "secondary"
+                opt_label = f"✓ {opt}" if is_opt_sel else opt
+                if st.button(opt_label, type=opt_type, use_container_width=True, key=f"btn_dec_{d_idx}"):
+                    rec["decision"] = opt
+                    st.rerun()
+
+            if current:
+                st.markdown(
+                    f"""
+                    <div style="
+                        background: rgba(2, 132, 199, 0.2);
+                        border: 1.5px solid #38bdf8;
+                        border-radius: 10px;
+                        padding: 8px 12px;
+                        margin-top: 8px;
+                        margin-bottom: 12px;
+                        color: #ffffff;
+                        font-size: 0.92rem;
+                        font-weight: 700;
+                    ">
+                        선택된 결정: <span style="color: #38bdf8; font-weight: 800; text-decoration: underline;">{current}</span>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+                branch_text = step.get("branch_info", {}).get(current)
                 if branch_text:
                     st.success(format_guide_text(branch_text))
-                if role == "수사관" and choice == "현장 즉시 이미지 추출":
+                if role == "수사관" and current == "현장 즉시 이미지 추출":
                     st.warning(
                         "🧑‍💼 현장 즉시 이미지 추출이 선택되었습니다. 수사관의 역할은 "
                         "여기서 끝나며, 이후 추출 작업은 포렌식 담당자가 전담합니다. "
                         "수사관은 아래에서 지금까지의 리포트를 다운로드할 수 있습니다."
                     )
 
+
+        if step.get("iphone_settings") and role == "포렌식분석관":
+            st.markdown("##### ⚙️ iPhone 현장 필수 보존 설정 체크")
+            rec["iphone_autolock"] = st.checkbox(
+                "자동 잠금 '안 함' 설정 완료 (설정 > 디스플레이 및 밝기 > 자동 잠금 > 안 함)",
+                value=rec.get("iphone_autolock", False),
+                key=f"setting_autolock_{idx}",
+            )
+            rec["iphone_airplane"] = st.checkbox(
+                "에어플레인 모드 활성화 (설정 > 에어플레인 모드 ON)",
+                value=rec.get("iphone_airplane", False),
+                key=f"setting_airplane_{idx}",
+            )
+            rec["iphone_wifi_off"] = st.checkbox(
+                "Wi-Fi 완전 차단 (설정 앱 내부 > Wi-Fi OFF)",
+                value=rec.get("iphone_wifi_off", False),
+                key=f"setting_wifi_{idx}",
+            )
+            rec["iphone_bt_off"] = st.checkbox(
+                "Bluetooth 완전 차단 (설정 앱 내부 > Bluetooth OFF)",
+                value=rec.get("iphone_bt_off", False),
+                key=f"setting_bt_{idx}",
+            )
+            rec["iphone_charging"] = st.checkbox(
+                "보조배터리 상시 충전 연결 (전원 꺼짐 및 BFU 방지)",
+                value=rec.get("iphone_charging", False),
+                key=f"setting_charging_{idx}",
+            )
+
         rec["done"] = st.checkbox("이 단계를 완료했습니다", value=rec["done"], key=f"done_{idx}")
         rec["note"] = st.text_area("현장 메모", value=rec["note"], key=f"note_{idx}", height=100)
 
         st.markdown("**📷 현장 사진**")
         uploaded_photos = st.file_uploader(
-            "사진 추가 (여러 장 선택 가능, 이미 올린 사진은 목록에서 x로 삭제 가능)",
-            type=["png", "jpg", "jpeg", "heic"],
+            "사진추가(여러장 선택가능, 목록에서 x로 삭제가능)",
+            type=["png", "jpg", "jpeg", "heic", "webp"],
             accept_multiple_files=True,
             key=f"photos_{idx}",
         )
-        rec["photos"] = uploaded_photos or []
+        if uploaded_photos is not None:
+            # 모바일 브라우저에서 리렌더링 시 파일이 유실되거나 인식이 늦어지는 문제 방지
+            # 업로드된 파일의 바이트 스트림을 즉시 읽어 세션에 영구 보존
+            rec["photos"] = uploaded_photos
 
         if rec["photos"]:
-            st.caption(f"이 단계에 첨부된 사진: {len(rec['photos'])}장")
+            st.markdown(f"<p style='color: #38bdf8; font-weight: 700; font-size: 0.95rem; margin-top: 6px;'>📸 이 단계에 첨부된 사진: {len(rec['photos'])}장</p>", unsafe_allow_html=True)
             thumb_cols = st.columns(3)
             for p_idx, photo in enumerate(rec["photos"]):
                 with thumb_cols[p_idx % 3]:
                     st.image(photo, caption=photo.name, width="stretch")
         else:
-            st.caption("아직 첨부된 사진이 없습니다.")
+            st.markdown("<p style='color: #fef08a; font-weight: 600; font-size: 0.9rem; margin-top: 6px;'>ℹ️ 아직 첨부된 사진이 없습니다. (필요 시 위에서 사진을 추가하세요)</p>", unsafe_allow_html=True)
 
     # 모든 단계 내용(특히 결정 라디오 처리)이 끝난 뒤에 계산해야 이번 렌더링에서
     # 방금 선택한 결정값이 바로 반영된다.
@@ -1257,12 +1887,18 @@ def render_guide():
     with col2:
         can_advance = visible_position < len(visible_indices) - 1 and idx < effective_last
         device_missing = step.get("type") == "device_select" and not device_type
+        step_not_done = not rec.get("done", False) and step.get("type") != "device_select"
+        disable_next = device_missing or step_not_done
+
         if can_advance:
-            if st.button("다음 단계 ▶", disabled=device_missing, use_container_width=True):
+            if st.button("다음 단계 ▶", disabled=disable_next, use_container_width=True):
                 st.session_state.current_index = visible_indices[visible_position + 1]
+                st.session_state["_scroll_to_top"] = True
                 st.rerun()
             if device_missing:
                 st.caption("기기 유형을 선택하면 다음 단계로 진행할 수 있습니다.")
+            elif step_not_done:
+                st.caption("💡 '이 단계를 완료했습니다'를 체크해야 다음 단계로 이동할 수 있습니다.")
         elif role == "수사관" and idx == effective_last and idx < len(steps) - 1:
             st.success("수사관 절차는 4단계까지입니다. 이후 기술적 절차는 포렌식분석관이 이어서 수행합니다. 아래에서 리포트를 다운로드하세요.")
         else:
@@ -1271,7 +1907,7 @@ def render_guide():
     if device_type:
         st.divider()
         st.markdown("### 📄 리포트 다운로드")
-        file_tag = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        file_tag = now_kst().strftime("%Y%m%d_%H%M%S")
         # 다운로드 가능한 사진도 PDF와 같은 단계 범위로 제한한다.
         export_last_index = get_effective_last_index(steps, st.session_state.records, role)
         export_indices = [i for i in get_visible_step_indices(steps, st.session_state.records, role) if i <= export_last_index]
@@ -1288,43 +1924,33 @@ def render_guide():
                 "폰트가 없어도 PDF는 생성되지만 한글이 깨져 보일 수 있습니다."
             )
 
-        dcol1, dcol2 = st.columns(2)
-        with dcol1:
-            pdf_bytes = build_pdf_bytes()
-            st.download_button(
-                "PDF 리포트 다운로드",
-                data=pdf_bytes,
-                file_name=f"forensic_report_{device_type}_{file_tag}.pdf",
-                mime="application/pdf",
-            )
-        with dcol2:
-            if total_photos > 0:
-                zip_buffer = io.BytesIO()
-                with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
-                    for display_index, (record_index, export_step) in enumerate(export_steps):
-                        photos = st.session_state.records.get(record_index, {}).get("photos") or []
-                        step_folder = f"{display_index + 1:02d}_{export_step['title'][:20]}".replace("/", "-")
-                        for photo in photos:
-                            photo.seek(0)
-                            zf.writestr(f"{step_folder}/{photo.name}", photo.read())
-                st.download_button(
-                    f"{'1~4단계' if role == '수사관' else '전체 단계'} 사진 ZIP ({total_photos}장)",
-                    data=zip_buffer.getvalue(),
-                    file_name=f"forensic_photos_{device_type}_{file_tag}.zip",
-                    mime="application/zip",
-                )
-            else:
-                st.caption("첨부된 사진이 없습니다.")
+        pdf_bytes = build_pdf_bytes()
+        st.download_button(
+            "📄 PDF 리포트 다운로드",
+            data=pdf_bytes,
+            file_name=f"forensic_report_{device_type}_{file_tag}.pdf",
+            mime="application/pdf",
+            use_container_width=True,
+        )
 
-        with st.expander("전체 단계 한눈에 보기 / 바로 이동"):
-            for display_index, i in enumerate(get_visible_step_indices(steps, st.session_state.records, role)):
-                s = steps[i]
-                mark = "✅" if st.session_state.records.get(i, {}).get("done") else "⬜"
-                locked = i > effective_last
-                label = f"{mark} {display_index + 1}. {s['title']}" + (" 🔒" if locked else "")
-                if st.button(label, key=f"jump_{i}", disabled=locked):
-                    st.session_state.current_index = i
-                    st.rerun()
+        if total_photos > 0:
+            zip_buffer = io.BytesIO()
+            with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+                for display_index, (record_index, export_step) in enumerate(export_steps):
+                    photos = st.session_state.records.get(record_index, {}).get("photos") or []
+                    step_folder = f"{display_index + 1:02d}_{export_step['title'][:20]}".replace("/", "-")
+                    for photo in photos:
+                        photo.seek(0)
+                        zf.writestr(f"{step_folder}/{photo.name}", photo.read())
+            st.download_button(
+                f"📦 {'1~4단계' if role == '수사관' else '전체 단계'} 사진 ZIP 다운로드 ({total_photos}장)",
+                data=zip_buffer.getvalue(),
+                file_name=f"forensic_photos_{device_type}_{file_tag}.zip",
+                mime="application/zip",
+                use_container_width=True,
+            )
+        else:
+            st.caption("ℹ️ 첨부된 사진이 없어 ZIP 다운로드가 비활성화되어 있습니다.")
 
 
 def main():
