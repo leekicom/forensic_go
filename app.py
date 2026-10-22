@@ -1961,60 +1961,61 @@ def render_guide():
 
 
 # ---------------------------------------------------------------------------
-# 사이드바: 기기 모델별 최신 OS 버전 조회
+# 모델별 최신 OS 버전 조회 (상단 팝오버 — 모바일에서도 항상 접근 가능)
 # ---------------------------------------------------------------------------
 
 OS_DATA_AS_OF = "2026년 1월 (앱 제작 시점 기준)"
 
-# 내장(오프라인) 참고 표. 공식 지원 범위는 제조사 정책 변경에 따라 달라질 수
-# 있으므로, 최신 패치 버전이나 가장 최근 출시 모델은 반드시 "온라인에서 최신
-# 정보 확인" 또는 공식 홈페이지로 재확인할 것을 권장한다.
+# 내장(오프라인) 참고 표. launch_os=출시 당시 최초 탑재 버전, latest_os=현재까지
+# 지원되는 최신 버전. 공식 지원 범위는 제조사 정책 변경에 따라 달라질 수 있으므로,
+# 최신 패치 버전이나 가장 최근 출시 모델은 반드시 "온라인에서 최신 정보 확인"
+# 또는 공식 홈페이지로 재확인할 것을 권장한다.
 IPHONE_OS_TABLE = [
-    {"model": "iPhone (1세대)", "year": 2007, "latest_os": "iPhone OS 3.1.3", "note": "업데이트 종료"},
-    {"model": "iPhone 3G", "year": 2008, "latest_os": "iOS 4.2.1", "note": "업데이트 종료"},
-    {"model": "iPhone 3GS", "year": 2009, "latest_os": "iOS 6.1.6", "note": "업데이트 종료"},
-    {"model": "iPhone 4", "year": 2010, "latest_os": "iOS 7.1.2", "note": "업데이트 종료"},
-    {"model": "iPhone 4S", "year": 2011, "latest_os": "iOS 9.3.6", "note": "업데이트 종료"},
-    {"model": "iPhone 5", "year": 2012, "latest_os": "iOS 10.3.4", "note": "업데이트 종료"},
-    {"model": "iPhone 5C", "year": 2013, "latest_os": "iOS 10.3.4", "note": "업데이트 종료"},
-    {"model": "iPhone 5S", "year": 2013, "latest_os": "iOS 12.5.7", "note": "업데이트 종료"},
-    {"model": "iPhone 6 / 6 Plus", "year": 2014, "latest_os": "iOS 12.5.7", "note": "업데이트 종료"},
-    {"model": "iPhone 6S / 6S Plus", "year": 2015, "latest_os": "iOS 15.8.x", "note": "업데이트 종료"},
-    {"model": "iPhone SE (1세대)", "year": 2016, "latest_os": "iOS 15.8.x", "note": "업데이트 종료"},
-    {"model": "iPhone 7 / 7 Plus", "year": 2016, "latest_os": "iOS 15.8.x", "note": "업데이트 종료"},
-    {"model": "iPhone 8 / 8 Plus", "year": 2017, "latest_os": "iOS 17.x", "note": "최종 지원 버전 근접"},
-    {"model": "iPhone X", "year": 2017, "latest_os": "iOS 17.x", "note": "최종 지원 버전 근접"},
-    {"model": "iPhone XR / XS / XS Max", "year": 2018, "latest_os": "iOS 18 이상", "note": "지원 중 (온라인 확인 권장)"},
-    {"model": "iPhone 11 시리즈", "year": 2019, "latest_os": "iOS 18 이상", "note": "지원 중 (온라인 확인 권장)"},
-    {"model": "iPhone SE (2세대)", "year": 2020, "latest_os": "iOS 18 이상", "note": "지원 중 (온라인 확인 권장)"},
-    {"model": "iPhone 12 시리즈", "year": 2020, "latest_os": "iOS 18 이상", "note": "지원 중 (온라인 확인 권장)"},
-    {"model": "iPhone 13 시리즈", "year": 2021, "latest_os": "iOS 18 이상", "note": "지원 중 (온라인 확인 권장)"},
-    {"model": "iPhone SE (3세대)", "year": 2022, "latest_os": "iOS 18 이상", "note": "지원 중 (온라인 확인 권장)"},
-    {"model": "iPhone 14 시리즈", "year": 2022, "latest_os": "iOS 18 이상", "note": "지원 중 (온라인 확인 권장)"},
-    {"model": "iPhone 15 시리즈", "year": 2023, "latest_os": "iOS 18 이상", "note": "지원 중 (온라인 확인 권장)"},
-    {"model": "iPhone 16 시리즈", "year": 2024, "latest_os": "iOS 18 이상", "note": "지원 중 (온라인 확인 권장)"},
-    {"model": "iPhone 16e", "year": 2025, "latest_os": "iOS 18 이상", "note": "지원 중 (온라인 확인 권장)"},
+    {"model": "iPhone (1세대)", "year": 2007, "launch_os": "iPhone OS 1.0", "latest_os": "iPhone OS 3.1.3", "note": "업데이트 종료"},
+    {"model": "iPhone 3G", "year": 2008, "launch_os": "iPhone OS 2.0", "latest_os": "iOS 4.2.1", "note": "업데이트 종료"},
+    {"model": "iPhone 3GS", "year": 2009, "launch_os": "iPhone OS 3.0", "latest_os": "iOS 6.1.6", "note": "업데이트 종료"},
+    {"model": "iPhone 4", "year": 2010, "launch_os": "iOS 4.0", "latest_os": "iOS 7.1.2", "note": "업데이트 종료"},
+    {"model": "iPhone 4S", "year": 2011, "launch_os": "iOS 5.0", "latest_os": "iOS 9.3.6", "note": "업데이트 종료"},
+    {"model": "iPhone 5", "year": 2012, "launch_os": "iOS 6.0", "latest_os": "iOS 10.3.4", "note": "업데이트 종료"},
+    {"model": "iPhone 5C", "year": 2013, "launch_os": "iOS 7.0", "latest_os": "iOS 10.3.4", "note": "업데이트 종료"},
+    {"model": "iPhone 5S", "year": 2013, "launch_os": "iOS 7.0", "latest_os": "iOS 12.5.7", "note": "업데이트 종료"},
+    {"model": "iPhone 6 / 6 Plus", "year": 2014, "launch_os": "iOS 8.0", "latest_os": "iOS 12.5.7", "note": "업데이트 종료"},
+    {"model": "iPhone 6S / 6S Plus", "year": 2015, "launch_os": "iOS 9.0", "latest_os": "iOS 15.8.x", "note": "업데이트 종료"},
+    {"model": "iPhone SE (1세대)", "year": 2016, "launch_os": "iOS 9.3", "latest_os": "iOS 15.8.x", "note": "업데이트 종료"},
+    {"model": "iPhone 7 / 7 Plus", "year": 2016, "launch_os": "iOS 10.0", "latest_os": "iOS 15.8.x", "note": "업데이트 종료"},
+    {"model": "iPhone 8 / 8 Plus", "year": 2017, "launch_os": "iOS 11.0", "latest_os": "iOS 17.x", "note": "최종 지원 버전 근접"},
+    {"model": "iPhone X", "year": 2017, "launch_os": "iOS 11.1", "latest_os": "iOS 17.x", "note": "최종 지원 버전 근접"},
+    {"model": "iPhone XR / XS / XS Max", "year": 2018, "launch_os": "iOS 12.0", "latest_os": "iOS 18 이상", "note": "지원 중 (온라인 확인 권장)"},
+    {"model": "iPhone 11 시리즈", "year": 2019, "launch_os": "iOS 13.0", "latest_os": "iOS 18 이상", "note": "지원 중 (온라인 확인 권장)"},
+    {"model": "iPhone SE (2세대)", "year": 2020, "launch_os": "iOS 13.4", "latest_os": "iOS 18 이상", "note": "지원 중 (온라인 확인 권장)"},
+    {"model": "iPhone 12 시리즈", "year": 2020, "launch_os": "iOS 14.1", "latest_os": "iOS 18 이상", "note": "지원 중 (온라인 확인 권장)"},
+    {"model": "iPhone 13 시리즈", "year": 2021, "launch_os": "iOS 15.0", "latest_os": "iOS 18 이상", "note": "지원 중 (온라인 확인 권장)"},
+    {"model": "iPhone SE (3세대)", "year": 2022, "launch_os": "iOS 15.4", "latest_os": "iOS 18 이상", "note": "지원 중 (온라인 확인 권장)"},
+    {"model": "iPhone 14 시리즈", "year": 2022, "launch_os": "iOS 16.0", "latest_os": "iOS 18 이상", "note": "지원 중 (온라인 확인 권장)"},
+    {"model": "iPhone 15 시리즈", "year": 2023, "launch_os": "iOS 17.0", "latest_os": "iOS 18 이상", "note": "지원 중 (온라인 확인 권장)"},
+    {"model": "iPhone 16 시리즈", "year": 2024, "launch_os": "iOS 18.0", "latest_os": "iOS 18 이상", "note": "지원 중 (온라인 확인 권장)"},
+    {"model": "iPhone 16e", "year": 2025, "launch_os": "iOS 18.3", "latest_os": "iOS 18 이상", "note": "지원 중 (온라인 확인 권장)"},
 ]
 
 GALAXY_OS_TABLE = [
-    {"model": "Galaxy S", "year": 2010, "latest_os": "Android 2.3.6", "note": "업데이트 종료"},
-    {"model": "Galaxy S2", "year": 2011, "latest_os": "Android 4.1.2", "note": "업데이트 종료"},
-    {"model": "Galaxy S3", "year": 2012, "latest_os": "Android 4.3", "note": "업데이트 종료"},
-    {"model": "Galaxy S4", "year": 2013, "latest_os": "Android 5.0.1", "note": "업데이트 종료"},
-    {"model": "Galaxy S5", "year": 2014, "latest_os": "Android 6.0.1", "note": "업데이트 종료"},
-    {"model": "Galaxy S6 / S6 Edge", "year": 2015, "latest_os": "Android 7.0", "note": "업데이트 종료"},
-    {"model": "Galaxy S7 / S7 Edge", "year": 2016, "latest_os": "Android 8.0", "note": "업데이트 종료"},
-    {"model": "Galaxy S8 / S8+", "year": 2017, "latest_os": "Android 9 (One UI 1.1)", "note": "업데이트 종료"},
-    {"model": "Galaxy S9 / S9+", "year": 2018, "latest_os": "Android 10 (One UI 2.5)", "note": "업데이트 종료"},
-    {"model": "Galaxy S10 시리즈", "year": 2019, "latest_os": "Android 12 (One UI 4.1)", "note": "업데이트 종료"},
-    {"model": "Galaxy S20 시리즈", "year": 2020, "latest_os": "Android 13 (One UI 5.1)", "note": "지원 종료 근접"},
-    {"model": "Galaxy S21 시리즈", "year": 2021, "latest_os": "Android 14 이상 (One UI 6 이상)", "note": "지원 중 (온라인 확인 권장)"},
-    {"model": "Galaxy S22 시리즈", "year": 2022, "latest_os": "Android 15 이상 (One UI 7 이상)", "note": "지원 중 (온라인 확인 권장)"},
-    {"model": "Galaxy S23 시리즈", "year": 2023, "latest_os": "Android 15 이상 (One UI 7 이상)", "note": "지원 중 (온라인 확인 권장)"},
-    {"model": "Galaxy S24 시리즈", "year": 2024, "latest_os": "Android 15 이상 (One UI 7 이상)", "note": "지원 중 (온라인 확인 권장)"},
-    {"model": "Galaxy S25 시리즈", "year": 2025, "latest_os": "Android 15 이상 (One UI 7 이상)", "note": "지원 중 (온라인 확인 권장)"},
-    {"model": "Galaxy Z Fold / Flip 시리즈 (최근 3개년)", "year": 2023, "latest_os": "Android 15 이상 (One UI 7 이상)", "note": "지원 중 (온라인 확인 권장)"},
-    {"model": "Galaxy Note 시리즈 (단종)", "year": 2020, "latest_os": "Android 13 (One UI 5.1)", "note": "신모델 단종, 업데이트 종료 근접"},
+    {"model": "Galaxy S", "year": 2010, "launch_os": "Android 2.1", "latest_os": "Android 2.3.6", "note": "업데이트 종료"},
+    {"model": "Galaxy S2", "year": 2011, "launch_os": "Android 2.3", "latest_os": "Android 4.1.2", "note": "업데이트 종료"},
+    {"model": "Galaxy S3", "year": 2012, "launch_os": "Android 4.0", "latest_os": "Android 4.3", "note": "업데이트 종료"},
+    {"model": "Galaxy S4", "year": 2013, "launch_os": "Android 4.2", "latest_os": "Android 5.0.1", "note": "업데이트 종료"},
+    {"model": "Galaxy S5", "year": 2014, "launch_os": "Android 4.4", "latest_os": "Android 6.0.1", "note": "업데이트 종료"},
+    {"model": "Galaxy S6 / S6 Edge", "year": 2015, "launch_os": "Android 5.0", "latest_os": "Android 7.0", "note": "업데이트 종료"},
+    {"model": "Galaxy S7 / S7 Edge", "year": 2016, "launch_os": "Android 6.0", "latest_os": "Android 8.0", "note": "업데이트 종료"},
+    {"model": "Galaxy S8 / S8+", "year": 2017, "launch_os": "Android 7.0", "latest_os": "Android 9 (One UI 1.1)", "note": "업데이트 종료"},
+    {"model": "Galaxy S9 / S9+", "year": 2018, "launch_os": "Android 8.0", "latest_os": "Android 10 (One UI 2.5)", "note": "업데이트 종료"},
+    {"model": "Galaxy S10 시리즈", "year": 2019, "launch_os": "Android 9.0", "latest_os": "Android 12 (One UI 4.1)", "note": "업데이트 종료"},
+    {"model": "Galaxy S20 시리즈", "year": 2020, "launch_os": "Android 10", "latest_os": "Android 13 (One UI 5.1)", "note": "지원 종료 근접"},
+    {"model": "Galaxy S21 시리즈", "year": 2021, "launch_os": "Android 11", "latest_os": "Android 14 이상 (One UI 6 이상)", "note": "지원 중 (온라인 확인 권장)"},
+    {"model": "Galaxy S22 시리즈", "year": 2022, "launch_os": "Android 12", "latest_os": "Android 15 이상 (One UI 7 이상)", "note": "지원 중 (온라인 확인 권장)"},
+    {"model": "Galaxy S23 시리즈", "year": 2023, "launch_os": "Android 13", "latest_os": "Android 15 이상 (One UI 7 이상)", "note": "지원 중 (온라인 확인 권장)"},
+    {"model": "Galaxy S24 시리즈", "year": 2024, "launch_os": "Android 14", "latest_os": "Android 15 이상 (One UI 7 이상)", "note": "지원 중 (온라인 확인 권장)"},
+    {"model": "Galaxy S25 시리즈", "year": 2025, "launch_os": "Android 15", "latest_os": "Android 15 이상 (One UI 7 이상)", "note": "지원 중 (온라인 확인 권장)"},
+    {"model": "Galaxy Z Fold / Flip 시리즈 (최근 3개년)", "year": 2023, "launch_os": "Android 13", "latest_os": "Android 15 이상 (One UI 7 이상)", "note": "지원 중 (온라인 확인 권장)"},
+    {"model": "Galaxy Note 시리즈 (단종)", "year": 2020, "launch_os": "Android 10", "latest_os": "Android 13 (One UI 5.1)", "note": "신모델 단종, 업데이트 종료 근접"},
 ]
 
 _WIKI_LIVE_SOURCES = {
@@ -2045,46 +2046,58 @@ def fetch_latest_os_online(brand):
         return None
 
 
-def render_os_lookup_sidebar():
-    with st.sidebar:
-        st.markdown("### 📱 모델별 최신 OS 조회")
-        st.caption(f"내장 데이터 기준: {OS_DATA_AS_OF}")
+def render_os_lookup_bar():
+    # 사이드바는 모바일에서 숨겨지면 다시 열기 어려운 경우가 있어, 항상 보이는
+    # 상단 팝오버 버튼으로 제공한다 (데스크톱·모바일 동일하게 동작).
+    bcol1, bcol2, bcol3 = st.columns([2, 2, 2])
+    with bcol2:
+        with st.popover("📱 모델별 최신 OS 조회", use_container_width=True):
+            st.caption(f"내장 데이터 기준: {OS_DATA_AS_OF}")
 
-        brand = st.radio("제조사", ["iPhone", "Galaxy"], horizontal=True, key="os_lookup_brand")
-        table = IPHONE_OS_TABLE if brand == "iPhone" else GALAXY_OS_TABLE
+            brand = st.radio("제조사", ["iPhone", "Galaxy"], horizontal=True, key="os_lookup_brand")
+            table = IPHONE_OS_TABLE if brand == "iPhone" else GALAXY_OS_TABLE
 
-        model_names = [f"{row['model']} ({row['year']})" for row in table]
-        selected = st.selectbox("모델 선택", model_names, key="os_lookup_model")
-        row = table[model_names.index(selected)]
+            model_names = [f"{row['model']} ({row['year']})" for row in table]
+            selected = st.selectbox("모델 선택", model_names, key="os_lookup_model")
+            row = table[model_names.index(selected)]
 
-        st.markdown(
-            f"""
-            <div style="background:#f1f5f9;border-radius:10px;padding:12px 14px;margin-top:6px;">
-                <div style="font-size:0.8rem;color:#64748b;">출시연도 {row['year']}</div>
-                <div style="font-size:1.05rem;font-weight:700;color:#0f172a;margin-top:2px;">{row['latest_os']}</div>
-                <div style="font-size:0.78rem;color:#94a3b8;margin-top:4px;">{row['note']}</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+            st.markdown(
+                f"""
+                <div style="background:#f1f5f9;border-radius:10px;padding:12px 14px;margin-top:6px;">
+                    <div style="font-size:0.8rem;color:#64748b;">출시연도 {row['year']}</div>
+                    <div style="display:flex;gap:14px;margin-top:8px;">
+                        <div style="flex:1;">
+                            <div style="font-size:0.75rem;color:#64748b;">최초 출시 버전</div>
+                            <div style="font-size:0.98rem;font-weight:700;color:#0f172a;">{row['launch_os']}</div>
+                        </div>
+                        <div style="flex:1;">
+                            <div style="font-size:0.75rem;color:#64748b;">현재 최신 버전</div>
+                            <div style="font-size:0.98rem;font-weight:700;color:#0f172a;">{row['latest_os']}</div>
+                        </div>
+                    </div>
+                    <div style="font-size:0.78rem;color:#94a3b8;margin-top:8px;">{row['note']}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
-        if st.button("🔄 온라인에서 최신 정보 확인", use_container_width=True, key="os_lookup_refresh"):
-            if not _OS_LOOKUP_LIVE_AVAILABLE:
-                st.warning("requests/pandas가 설치되어 있지 않아 온라인 확인을 쓸 수 없습니다. requirements.txt를 참고해 설치해 주세요.")
-            else:
-                with st.spinner("온라인에서 확인하는 중..."):
-                    result = fetch_latest_os_online(brand)
-                if result:
-                    st.success(f"온라인 확인 결과 (참고용): {result}")
+            if st.button("🔄 온라인에서 최신 정보 확인", use_container_width=True, key="os_lookup_refresh"):
+                if not _OS_LOOKUP_LIVE_AVAILABLE:
+                    st.warning("requests/pandas가 설치되어 있지 않아 온라인 확인을 쓸 수 없습니다. requirements.txt를 참고해 설치해 주세요.")
                 else:
-                    st.info("인터넷에 연결되어 있지 않거나 조회에 실패했습니다. 내장 데이터를 기준으로 표시 중입니다.")
+                    with st.spinner("온라인에서 확인하는 중..."):
+                        result = fetch_latest_os_online(brand)
+                    if result:
+                        st.success(f"온라인 확인 결과 (참고용): {result}")
+                    else:
+                        st.info("인터넷에 연결되어 있지 않거나 조회에 실패했습니다. 내장 데이터를 기준으로 표시 중입니다.")
 
-        st.caption("※ 공식 지원 범위는 제조사 정책에 따라 바뀔 수 있습니다. 중요한 판단에는 Apple/Samsung 공식 페이지를 함께 확인하세요.")
+            st.caption("※ 공식 지원 범위는 제조사 정책에 따라 바뀔 수 있습니다. 중요한 판단에는 Apple/Samsung 공식 페이지를 함께 확인하세요.")
 
 
 def main():
     init_state()
-    render_os_lookup_sidebar()
+    render_os_lookup_bar()
     if st.session_state.stage == "start":
         render_start()
     else:
