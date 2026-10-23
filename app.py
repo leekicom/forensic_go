@@ -44,7 +44,6 @@ from PIL import Image as PILImage
 
 try:
     import requests
-    import pandas as pd
     _OS_LOOKUP_LIVE_AVAILABLE = True
 except Exception:
     _OS_LOOKUP_LIVE_AVAILABLE = False
@@ -1961,147 +1960,127 @@ def render_guide():
 
 
 # ---------------------------------------------------------------------------
-# 모델별 최신 OS 버전 조회 (상단 팝오버 — 모바일에서도 항상 접근 가능)
+# 모델별 최신 OS / 펌웨어 조회 (페이지 맨 아래)
 # ---------------------------------------------------------------------------
 
-OS_DATA_AS_OF = "2026년 1월 (앱 제작 시점 기준)"
+OS_DATA_AS_OF = "내장 참고표: 참고용 · 온라인 조회 권장"
 
-# 내장(오프라인) 참고 표. launch_os=출시 당시 최초 탑재 버전, latest_os=현재까지
-# 지원되는 최신 버전. 공식 지원 범위는 제조사 정책 변경에 따라 달라질 수 있으므로,
-# 최신 패치 버전이나 가장 최근 출시 모델은 반드시 "온라인에서 최신 정보 확인"
-# 또는 공식 홈페이지로 재확인할 것을 권장한다.
-IPHONE_OS_TABLE = [
-    {"model": "iPhone (1세대)", "year": 2007, "launch_os": "iPhone OS 1.0", "latest_os": "iPhone OS 3.1.3", "note": "업데이트 종료"},
-    {"model": "iPhone 3G", "year": 2008, "launch_os": "iPhone OS 2.0", "latest_os": "iOS 4.2.1", "note": "업데이트 종료"},
-    {"model": "iPhone 3GS", "year": 2009, "launch_os": "iPhone OS 3.0", "latest_os": "iOS 6.1.6", "note": "업데이트 종료"},
-    {"model": "iPhone 4", "year": 2010, "launch_os": "iOS 4.0", "latest_os": "iOS 7.1.2", "note": "업데이트 종료"},
-    {"model": "iPhone 4S", "year": 2011, "launch_os": "iOS 5.0", "latest_os": "iOS 9.3.6", "note": "업데이트 종료"},
-    {"model": "iPhone 5", "year": 2012, "launch_os": "iOS 6.0", "latest_os": "iOS 10.3.4", "note": "업데이트 종료"},
-    {"model": "iPhone 5C", "year": 2013, "launch_os": "iOS 7.0", "latest_os": "iOS 10.3.4", "note": "업데이트 종료"},
-    {"model": "iPhone 5S", "year": 2013, "launch_os": "iOS 7.0", "latest_os": "iOS 12.5.7", "note": "업데이트 종료"},
-    {"model": "iPhone 6 / 6 Plus", "year": 2014, "launch_os": "iOS 8.0", "latest_os": "iOS 12.5.7", "note": "업데이트 종료"},
-    {"model": "iPhone 6S / 6S Plus", "year": 2015, "launch_os": "iOS 9.0", "latest_os": "iOS 15.8.x", "note": "업데이트 종료"},
-    {"model": "iPhone SE (1세대)", "year": 2016, "launch_os": "iOS 9.3", "latest_os": "iOS 15.8.x", "note": "업데이트 종료"},
-    {"model": "iPhone 7 / 7 Plus", "year": 2016, "launch_os": "iOS 10.0", "latest_os": "iOS 15.8.x", "note": "업데이트 종료"},
-    {"model": "iPhone 8 / 8 Plus", "year": 2017, "launch_os": "iOS 11.0", "latest_os": "iOS 17.x", "note": "최종 지원 버전 근접"},
-    {"model": "iPhone X", "year": 2017, "launch_os": "iOS 11.1", "latest_os": "iOS 17.x", "note": "최종 지원 버전 근접"},
-    {"model": "iPhone XR / XS / XS Max", "year": 2018, "launch_os": "iOS 12.0", "latest_os": "iOS 18 이상", "note": "지원 중 (온라인 확인 권장)"},
-    {"model": "iPhone 11 시리즈", "year": 2019, "launch_os": "iOS 13.0", "latest_os": "iOS 18 이상", "note": "지원 중 (온라인 확인 권장)"},
-    {"model": "iPhone SE (2세대)", "year": 2020, "launch_os": "iOS 13.4", "latest_os": "iOS 18 이상", "note": "지원 중 (온라인 확인 권장)"},
-    {"model": "iPhone 12 시리즈", "year": 2020, "launch_os": "iOS 14.1", "latest_os": "iOS 18 이상", "note": "지원 중 (온라인 확인 권장)"},
-    {"model": "iPhone 13 시리즈", "year": 2021, "launch_os": "iOS 15.0", "latest_os": "iOS 18 이상", "note": "지원 중 (온라인 확인 권장)"},
-    {"model": "iPhone SE (3세대)", "year": 2022, "launch_os": "iOS 15.4", "latest_os": "iOS 18 이상", "note": "지원 중 (온라인 확인 권장)"},
-    {"model": "iPhone 14 시리즈", "year": 2022, "launch_os": "iOS 16.0", "latest_os": "iOS 18 이상", "note": "지원 중 (온라인 확인 권장)"},
-    {"model": "iPhone 15 시리즈", "year": 2023, "launch_os": "iOS 17.0", "latest_os": "iOS 18 이상", "note": "지원 중 (온라인 확인 권장)"},
-    {"model": "iPhone 16 시리즈", "year": 2024, "launch_os": "iOS 18.0", "latest_os": "iOS 18 이상", "note": "지원 중 (온라인 확인 권장)"},
-    {"model": "iPhone 16e", "year": 2025, "launch_os": "iOS 18.3", "latest_os": "iOS 18 이상", "note": "지원 중 (온라인 확인 권장)"},
-]
-
-GALAXY_OS_TABLE = [
-    {"model": "Galaxy S", "year": 2010, "launch_os": "Android 2.1", "latest_os": "Android 2.3.6", "note": "업데이트 종료"},
-    {"model": "Galaxy S2", "year": 2011, "launch_os": "Android 2.3", "latest_os": "Android 4.1.2", "note": "업데이트 종료"},
-    {"model": "Galaxy S3", "year": 2012, "launch_os": "Android 4.0", "latest_os": "Android 4.3", "note": "업데이트 종료"},
-    {"model": "Galaxy S4", "year": 2013, "launch_os": "Android 4.2", "latest_os": "Android 5.0.1", "note": "업데이트 종료"},
-    {"model": "Galaxy S5", "year": 2014, "launch_os": "Android 4.4", "latest_os": "Android 6.0.1", "note": "업데이트 종료"},
-    {"model": "Galaxy S6 / S6 Edge", "year": 2015, "launch_os": "Android 5.0", "latest_os": "Android 7.0", "note": "업데이트 종료"},
-    {"model": "Galaxy S7 / S7 Edge", "year": 2016, "launch_os": "Android 6.0", "latest_os": "Android 8.0", "note": "업데이트 종료"},
-    {"model": "Galaxy S8 / S8+", "year": 2017, "launch_os": "Android 7.0", "latest_os": "Android 9 (One UI 1.1)", "note": "업데이트 종료"},
-    {"model": "Galaxy S9 / S9+", "year": 2018, "launch_os": "Android 8.0", "latest_os": "Android 10 (One UI 2.5)", "note": "업데이트 종료"},
-    {"model": "Galaxy S10 시리즈", "year": 2019, "launch_os": "Android 9.0", "latest_os": "Android 12 (One UI 4.1)", "note": "업데이트 종료"},
-    {"model": "Galaxy S20 시리즈", "year": 2020, "launch_os": "Android 10", "latest_os": "Android 13 (One UI 5.1)", "note": "지원 종료 근접"},
-    {"model": "Galaxy S21 시리즈", "year": 2021, "launch_os": "Android 11", "latest_os": "Android 14 이상 (One UI 6 이상)", "note": "지원 중 (온라인 확인 권장)"},
-    {"model": "Galaxy S22 시리즈", "year": 2022, "launch_os": "Android 12", "latest_os": "Android 15 이상 (One UI 7 이상)", "note": "지원 중 (온라인 확인 권장)"},
-    {"model": "Galaxy S23 시리즈", "year": 2023, "launch_os": "Android 13", "latest_os": "Android 15 이상 (One UI 7 이상)", "note": "지원 중 (온라인 확인 권장)"},
-    {"model": "Galaxy S24 시리즈", "year": 2024, "launch_os": "Android 14", "latest_os": "Android 15 이상 (One UI 7 이상)", "note": "지원 중 (온라인 확인 권장)"},
-    {"model": "Galaxy S25 시리즈", "year": 2025, "launch_os": "Android 15", "latest_os": "Android 15 이상 (One UI 7 이상)", "note": "지원 중 (온라인 확인 권장)"},
-    {"model": "Galaxy Z Fold / Flip 시리즈 (최근 3개년)", "year": 2023, "launch_os": "Android 13", "latest_os": "Android 15 이상 (One UI 7 이상)", "note": "지원 중 (온라인 확인 권장)"},
-    {"model": "Galaxy Note 시리즈 (단종)", "year": 2020, "launch_os": "Android 10", "latest_os": "Android 13 (One UI 5.1)", "note": "신모델 단종, 업데이트 종료 근접"},
-]
-
-_WIKI_LIVE_SOURCES = {
-    "iPhone": "https://en.wikipedia.org/wiki/IOS_version_history",
-    "Galaxy": "https://en.wikipedia.org/wiki/Android_version_history",
-}
+# 네트워크 조회는 제조사/펌웨어 아카이브의 최신 공개 정보를 참고한다.
+# iPhone: IPSW.me 공개 API, Galaxy: SamMobile 모델별 펌웨어 페이지
+IPSW_API_BASE = "https://api.ipsw.me/v4"
+IPSW_SITE = "https://ipsw.me/"
+SAMMOBILE_SITE = "https://www.sammobile.com/firmwares/"
 
 
-def fetch_latest_os_online(brand):
-    """온라인에서 최신 OS 버전 정보를 가져와 본다. 실패하면 None을 반환한다
-    (인터넷 미연결, 사이트 구조 변경 등 어떤 이유로든 예외를 던지지 않는다)."""
+def fetch_iphone_firmware(model_name):
+    """IPSW.me API에서 모델 이름과 일치하는 기기의 최신 IPSW 정보를 조회한다."""
     if not _OS_LOOKUP_LIVE_AVAILABLE:
-        return None
-    url = _WIKI_LIVE_SOURCES.get(brand)
-    if not url:
-        return None
+        return None, "requests/pandas가 설치되어 있지 않습니다."
     try:
-        resp = requests.get(url, timeout=6, headers={"User-Agent": "Mozilla/5.0"})
+        resp = requests.get(f"{IPSW_API_BASE}/devices", timeout=12,
+                            headers={"User-Agent": "Mozilla/5.0"})
         resp.raise_for_status()
-        tables = pd.read_html(resp.text)
-        if not tables:
-            return None
-        # 가장 큰 표(보통 버전 이력 표)를 고른다.
-        biggest = max(tables, key=lambda t: t.shape[0])
-        latest_row = biggest.iloc[0]
-        return " / ".join(str(v) for v in latest_row.values[:3])
-    except Exception:
-        return None
+        devices = resp.json()
+        matches = [d for d in devices if isinstance(d, dict)
+                   and model_name.casefold() in str(d.get("name", "")).casefold()]
+        if not matches:
+            return None, "IPSW.me에서 해당 모델을 찾지 못했습니다. 모델명을 더 구체적으로 입력해 주세요."
+        # 동명/세부 모델이 여럿이면 가장 먼저 나온 정확한 이름을 우선 사용
+        device = next((d for d in matches if str(d.get("name", "")).casefold() == model_name.casefold()), matches[0])
+        identifier = device.get("identifier")
+        if not identifier:
+            return None, "기기 식별자를 확인할 수 없습니다."
+        fw_resp = requests.get(f"{IPSW_API_BASE}/device/{identifier}?type=ipsw", timeout=12,
+                               headers={"User-Agent": "Mozilla/5.0"})
+        fw_resp.raise_for_status()
+        data = fw_resp.json()
+        firmwares = data.get("firmwares", []) if isinstance(data, dict) else data
+        if not firmwares:
+            # 일부 API 응답은 펌웨어 목록을 별도 엔드포인트로 제공
+            fw_resp = requests.get(f"{IPSW_API_BASE}/device/{identifier}", timeout=12,
+                                   headers={"User-Agent": "Mozilla/5.0"})
+            fw_resp.raise_for_status()
+            data = fw_resp.json()
+            firmwares = data.get("firmwares", []) if isinstance(data, dict) else []
+        if not firmwares:
+            return None, "해당 기기의 IPSW 펌웨어 정보가 없습니다."
+        firmwares = sorted(firmwares, key=lambda x: str(x.get("releasedate", "")), reverse=True)
+        signed = [f for f in firmwares if f.get("signed") is True]
+        latest = signed[0] if signed else firmwares[0]
+        return {
+            "name": device.get("name", model_name),
+            "identifier": identifier,
+            "version": latest.get("version", "정보 없음"),
+            "build": latest.get("buildid", "정보 없음"),
+            "date": latest.get("releasedate", "정보 없음"),
+            "signed": latest.get("signed"),
+            "url": latest.get("url", ""),
+            "source_url": f"{IPSW_SITE}download/{identifier}",
+        }, None
+    except Exception as exc:
+        return None, f"온라인 조회에 실패했습니다: {exc}"
 
 
 def render_os_lookup_bar():
-    # 사이드바는 모바일에서 숨겨지면 다시 열기 어려운 경우가 있어, 항상 보이는
-    # 상단 팝오버 버튼으로 제공한다 (데스크톱·모바일 동일하게 동작).
-    bcol1, bcol2, bcol3 = st.columns([2, 2, 2])
-    with bcol2:
-        with st.popover("📱 모델별 최신 OS 조회", use_container_width=True):
-            st.caption(f"내장 데이터 기준: {OS_DATA_AS_OF}")
+    """모델별 최신 OS 조회 UI. main()의 페이지 콘텐츠 뒤에서 호출해 맨 아래에 표시한다."""
+    st.divider()
+    st.subheader("📱 모델별 최신 OS 조회")
+    st.caption("최신 OS/펌웨어 확인을 위한 참고 기능입니다. 네트워크와 외부 사이트 상태에 따라 조회가 제한될 수 있습니다.")
 
-            brand = st.radio("제조사", ["iPhone", "Galaxy"], horizontal=True, key="os_lookup_brand")
-            table = IPHONE_OS_TABLE if brand == "iPhone" else GALAXY_OS_TABLE
-
-            model_names = [f"{row['model']} ({row['year']})" for row in table]
-            selected = st.selectbox("모델 선택", model_names, key="os_lookup_model")
-            row = table[model_names.index(selected)]
-
-            st.markdown(
-                f"""
-                <div style="background:#f1f5f9;border-radius:10px;padding:12px 14px;margin-top:6px;">
-                    <div style="font-size:0.8rem;color:#64748b;">출시연도 {row['year']}</div>
-                    <div style="display:flex;gap:14px;margin-top:8px;">
-                        <div style="flex:1;">
-                            <div style="font-size:0.75rem;color:#64748b;">최초 출시 버전</div>
-                            <div style="font-size:0.98rem;font-weight:700;color:#0f172a;">{row['launch_os']}</div>
-                        </div>
-                        <div style="flex:1;">
-                            <div style="font-size:0.75rem;color:#64748b;">현재 최신 버전</div>
-                            <div style="font-size:0.98rem;font-weight:700;color:#0f172a;">{row['latest_os']}</div>
-                        </div>
-                    </div>
-                    <div style="font-size:0.78rem;color:#94a3b8;margin-top:8px;">{row['note']}</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
-            if st.button("🔄 온라인에서 최신 정보 확인", use_container_width=True, key="os_lookup_refresh"):
-                if not _OS_LOOKUP_LIVE_AVAILABLE:
-                    st.warning("requests/pandas가 설치되어 있지 않아 온라인 확인을 쓸 수 없습니다. requirements.txt를 참고해 설치해 주세요.")
+    brand = st.radio("제조사", ["iPhone / iPad", "Samsung Galaxy"], horizontal=True, key="os_lookup_brand_bottom")
+    if brand == "iPhone / iPad":
+        model_name = st.text_input("기기 모델명", placeholder="예: iPhone 16 Pro, iPhone 13, iPad Pro 11-inch (4th generation)", key="os_lookup_apple_model_bottom")
+        c1, c2 = st.columns([1, 1])
+        with c1:
+            if st.button("🔎 IPSW.me에서 최신 펌웨어 조회", key="os_lookup_apple_btn_bottom", use_container_width=True):
+                if not model_name.strip():
+                    st.warning("기기 모델명을 입력해 주세요.")
                 else:
-                    with st.spinner("온라인에서 확인하는 중..."):
-                        result = fetch_latest_os_online(brand)
+                    with st.spinner("IPSW.me의 공개 기기/펌웨어 정보를 확인하는 중..."):
+                        result, error = fetch_iphone_firmware(model_name.strip())
                     if result:
-                        st.success(f"온라인 확인 결과 (참고용): {result}")
+                        st.session_state["os_lookup_apple_result_bottom"] = result
+                        st.session_state.pop("os_lookup_apple_error_bottom", None)
                     else:
-                        st.info("인터넷에 연결되어 있지 않거나 조회에 실패했습니다. 내장 데이터를 기준으로 표시 중입니다.")
+                        st.session_state["os_lookup_apple_error_bottom"] = error
+                        st.session_state.pop("os_lookup_apple_result_bottom", None)
+        with c2:
+            st.link_button("IPSW.me 사이트 열기", IPSW_SITE, use_container_width=True)
+        result = st.session_state.get("os_lookup_apple_result_bottom")
+        if result:
+            st.markdown(f"**기기:** {result['name']} (`{result['identifier']}`)")
+            st.markdown(f"**최신 확인 버전:** {result['version']}  ·  **빌드:** {result['build']}  ·  **출시일:** {result['date']}")
+            if result["signed"] is True:
+                st.success("현재 서명 중인 펌웨어로 표시됩니다.")
+            elif result["signed"] is False:
+                st.warning("현재 서명되지 않은 펌웨어입니다. 복원 가능 여부를 확인해 주세요.")
+            if result.get("url"):
+                st.link_button("펌웨어 상세 / 다운로드 정보", result["url"])
+        if st.session_state.get("os_lookup_apple_error_bottom"):
+            st.warning(st.session_state["os_lookup_apple_error_bottom"])
+        st.caption("출처: IPSW.me 공개 API 및 펌웨어 목록. 복원 가능 여부는 서명 상태에 따라 달라질 수 있습니다.")
+    else:
+        model_number = st.text_input("Samsung 모델 번호", placeholder="예: SM-S938N, SM-S928N, SM-A556N", key="os_lookup_samsung_model_bottom")
+        country = st.selectbox("지역 / CSC 참고", ["Korea (KOO)", "Korea (SKC)", "Korea (KTC)", "Korea (LUC)", "기타 / 직접 확인"], key="os_lookup_samsung_csc_bottom")
+        st.info("SamMobile은 모델 번호와 국가/통신사(CSC)에 따라 펌웨어가 다르게 표시될 수 있습니다. 앱에서 임의로 버전을 추정하지 않고, 해당 사이트의 최신 펌웨어 목록을 확인하도록 연결합니다.")
+        if model_number.strip():
+            from urllib.parse import quote
+            search_url = SAMMOBILE_SITE + "?model=" + quote(model_number.strip(), safe="")
+            st.link_button("🔎 SamMobile에서 해당 모델 펌웨어 확인", search_url, use_container_width=True)
+        else:
+            st.link_button("SamMobile 펌웨어 검색 열기", SAMMOBILE_SITE, use_container_width=True)
+        st.caption(f"선택한 지역 참고값: {country}. 실제 펌웨어는 SamMobile에서 모델 번호 및 CSC를 대조해 확인해 주세요.")
 
-            st.caption("※ 공식 지원 범위는 제조사 정책에 따라 바뀔 수 있습니다. 중요한 판단에는 Apple/Samsung 공식 페이지를 함께 확인하세요.")
+    st.caption("주의: 이 기능은 참고용이며 수사·포렌식 판단 시 기기 설정의 실제 OS 빌드, 모델 번호, CSC 및 제조사 자료를 함께 기록해 주세요.")
 
 
 def main():
     init_state()
-    render_os_lookup_bar()
     if st.session_state.stage == "start":
         render_start()
     else:
         render_guide()
+    render_os_lookup_bar()
 
 
 if __name__ == "__main__":
