@@ -2163,6 +2163,35 @@ def get_samsung_latest_firmware(model_number):
     return None
 
 
+# SamMobile에서 직접 확인해 app.py에 포함한 국내 최신 펌웨어 스냅샷.
+# 기준일: 2026-10-23. 버튼을 누르면 이 자료를 우선 사용하므로 외부 사이트를 열지 않아도 표시된다.
+# 모델별 페이지의 Korea 항목 중 최신 날짜/맨 위 항목을 기록했다.
+SAMSUNG_KOREA_FIRMWARE_SNAPSHOT_DATE = "2026-10-23"
+SAMSUNG_KOREA_FIRMWARE_SNAPSHOT = {
+    "SM-S948N": {"model": "SM-S948N", "region": "Korea", "date": "2026-09-23", "version": "17", "pda": "S948NKSS4BZIG"},
+    "SM-S947N": {"model": "SM-S947N", "region": "Korea", "date": "2026-09-23", "version": "17", "pda": "S947NKSS4BZIG"},
+    "SM-S942N": {"model": "SM-S942N", "region": "Korea", "date": "2026-09-23", "version": "17", "pda": "S942NKSS4BZIG"},
+    "SM-S938N": {"model": "SM-S938N", "region": "Korea", "date": "2026-10-07", "version": "17", "pda": "S938NKSSDDZJ2"},
+    "SM-S936N": {"model": "SM-S936N", "region": "Korea", "date": "2026-10-07", "version": "17", "pda": "S936NKSSDDZJ2"},
+    "SM-S931N": {"model": "SM-S931N", "region": "Korea", "date": "2026-10-07", "version": "17", "pda": "S931NKSSDDZJ2"},
+    "SM-S928N": {"model": "SM-S928N", "region": "Korea", "date": "2026-09-19", "version": "17", "pda": "S928NKSU6EZIF"},
+    "SM-S921N": {"model": "SM-S921N", "region": "Korea", "date": "2026-09-19", "version": "17", "pda": "S921NKSUHEZIF"},
+    "SM-S918N": {"model": "SM-S918N", "region": "Korea", "date": "2026-09-28", "version": "17", "pda": "S918NKSU8GZIF"},
+    "SM-S911N": {"model": "SM-S911N", "region": "Korea", "date": "2026-09-28", "version": "17", "pda": "S911NKSU8GZIF"},
+    "SM-S908N": {"model": "SM-S908N", "region": "Korea", "date": "2026-08-18", "version": "16", "pda": "S908NKSS9GZH3"},
+    "SM-F966N": {"model": "SM-F966N", "region": "Korea", "date": "2026-09-19", "version": "17", "pda": "F966NKSUCCZIH"},
+    "SM-F956N": {"model": "SM-F956N", "region": "Korea", "date": "2026-09-19", "version": "17", "pda": "F956NKSU4EZIH"},
+    "SM-F946N": {"model": "SM-F946N", "region": "Korea", "date": "2026-10-07", "version": "17", "pda": "F946NTBU6HZIK"},
+    "SM-F766N": {"model": "SM-F766N", "region": "Korea", "date": "2026-09-19", "version": "17", "pda": "F766NKSUCCZIH"},
+    "SM-F741N": {"model": "SM-F741N", "region": "Korea", "date": "2026-09-19", "version": "17", "pda": "F741NKSU4EZIH"},
+    "SM-F731N": {"model": "SM-F731N", "region": "Korea", "date": "2026-09-28", "version": "17", "pda": "F731NTCU6HZIJ"},
+    "SM-F936N": {"model": "SM-F936N", "region": "Korea", "date": "2026-07-09", "version": "16", "pda": "F936NKSS8IZG2"},
+    "SM-A536N": {"model": "SM-A536N", "region": "Korea", "date": "2026-09-14", "version": "16", "pda": "A536NKSUIGZI2"},
+    "SM-G998N": {"model": "SM-G998N", "region": "Korea (KT Corporation)", "date": "2026-03-05", "version": "15", "pda": "G998NKSSCHZA9"},
+    "SM-G988N": {"model": "SM-G988N", "region": "Korea", "date": "2025-03-17", "version": "13", "pda": "G988NKSS8IYC2"},
+}
+
+
 @st.cache_data(ttl=1800, show_spinner=False)
 def fetch_samsung_korea_firmware(model_number):
     """선택한 삼성 모델의 SamMobile 상세 목록에서 첫 번째 Korea 행을 반환한다.
@@ -2170,8 +2199,14 @@ def fetch_samsung_korea_firmware(model_number):
     페이지에 표시되는 순서를 유지하여 Korea 항목 중 맨 위의 펌웨어를 선택한다.
     지역/통신사 입력은 요구하지 않는다.
     """
+    # 조사해 app.py에 내장한 자료가 있으면 네트워크 없이 바로 반환한다.
+    snapshot = SAMSUNG_KOREA_FIRMWARE_SNAPSHOT.get(model_number.upper())
+    if snapshot:
+        return {**snapshot, "url": "내장 자료", "snapshot_date": SAMSUNG_KOREA_FIRMWARE_SNAPSHOT_DATE}, None
+
+    # 내장 자료가 없는 구형/기타 모델은 상세 페이지를 조회해 결과를 보완한다.
     if not _OS_LOOKUP_LIVE_AVAILABLE:
-        return None, "requests 모듈이 설치되어 있지 않아 온라인 조회를 할 수 없습니다."
+        return None, "이 모델의 내장 펌웨어 자료가 없고 네트워크 조회도 사용할 수 없습니다."
 
     from html.parser import HTMLParser
     import re
@@ -2293,7 +2328,7 @@ def render_os_lookup_bar():
             key="os_lookup_samsung_model_select_bottom",
         )
         model_number = samsung_models[selected_label]
-        st.caption("선택한 모델의 SamMobile 펌웨어 목록에서 Korea 항목 중 맨 위에 표시된 버전을 가져옵니다.")
+        st.caption("조사해 앱에 내장한 국내 펌웨어 자료는 즉시 표시하고, 내장 자료가 없는 모델은 온라인 조회로 보완합니다.")
         if st.button("🇰🇷 국내 최신 펌웨어 조회", key="os_lookup_samsung_btn_bottom", use_container_width=True):
             with st.spinner(f"{model_number} 모델의 Korea 펌웨어를 확인하는 중..."):
                 result, error = fetch_samsung_korea_firmware(model_number)
@@ -2313,11 +2348,14 @@ def render_os_lookup_bar():
                 f"**빌드 날짜:** {samsung_result.get('date', '정보 없음')}"
             )
             st.success(f"국가/통신사: {samsung_result.get('region', 'Korea')}")
-            st.caption(f"조회 출처: SamMobile · {samsung_result.get('url', '')}")
+            if samsung_result.get("snapshot_date"):
+                st.caption(f"내장 조회 자료 기준일: {samsung_result['snapshot_date']} · SamMobile 공개 펌웨어 목록을 확인해 앱에 포함한 값입니다.")
+            else:
+                st.caption("조회 결과는 앱 안에 표시됩니다. 외부 펌웨어 사이트로 이동하지 않습니다.")
         if st.session_state.get("os_lookup_samsung_error_bottom"):
             st.warning(st.session_state["os_lookup_samsung_error_bottom"])
 
-        st.caption("조회 버튼을 누르면 국내(Korea) 펌웨어 목록의 첫 번째 항목을 앱 안에 표시합니다. 통신사별 최신 빌드가 다를 수 있으므로, 수사 기록에는 실제 기기 설정의 OS 버전·빌드 번호·CSC도 함께 기록해 주세요.")
+        st.caption("조회 버튼을 누르면 국내(Korea) 펌웨어 정보를 앱 안에 표시합니다. 내장 자료는 기준일 이후 갱신되지 않을 수 있으며, 통신사별 최신 빌드가 다를 수 있으므로 실제 기기 설정의 OS 버전·빌드 번호·CSC도 함께 기록해 주세요.")
 
     st.caption("주의: 이 기능은 참고용이며 수사·포렌식 판단 시 기기 설정의 실제 OS 빌드, 모델 번호, CSC 및 제조사 자료를 함께 기록해 주세요.")
 
