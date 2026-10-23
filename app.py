@@ -2359,11 +2359,20 @@ def render_os_lookup_bar():
         if samsung_result and samsung_result.get("model", "").casefold() == model_number.casefold():
             st.markdown(f"**기기 모델:** {selected_label} (`{model_number}`)")
             st.markdown(
-                f"**국내 최신 확인 OS:** Android {samsung_result.get('version', '정보 없음')}  ·  "
-                f"**빌드 번호(PDA):** {samsung_result.get('pda', '정보 없음')}  ·  "
-                f"**빌드 날짜:** {samsung_result.get('date', '정보 없음')}"
+                f"""
+                <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;
+                            padding:14px 16px;margin-top:6px;">
+                    <div style="font-size:0.98rem;color:#14532d;line-height:1.7;">
+                        국내 최신 확인 OS: <b>Android {samsung_result.get('version', '정보 없음')}</b>
+                        &nbsp;·&nbsp;
+                        빌드 번호(PDA): <b>{samsung_result.get('pda', '정보 없음')}</b>
+                        &nbsp;·&nbsp;
+                        빌드 날짜: <b>{samsung_result.get('date', '정보 없음')}</b>
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
             )
-            st.success(f"국가/통신사: {samsung_result.get('region', 'Korea')}")
             if samsung_result.get("snapshot_date"):
                 st.caption(f"내장 조회 자료 기준일: {samsung_result['snapshot_date']} · SamMobile 공개 펌웨어 목록을 확인해 앱에 포함한 값입니다.")
             else:
