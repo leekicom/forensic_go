@@ -2237,7 +2237,6 @@ def fetch_samsung_korea_firmware(model_number):
                     self.rows.append(self.row)
                 self.row = None
 
-<<<<<<< HEAD
     # 참고: "https://www.sammobile.com/samsung/firmware/{모델}/" 형태는 실제로는
     # 존재하지 않는 URL이라 이전 구현은 조회에 실패하기 쉬웠다. SamMobile은
     # 기기 슬러그(예: galaxy-s21-plus)를 알아야 상세 페이지에 접근할 수 있는데,
@@ -2245,9 +2244,6 @@ def fetch_samsung_korea_firmware(model_number):
     # 조회 가능한 검색 엔드포인트(/firmwares/search/{모델}/)를 사용한다.
     model_upper = model_number.upper()
     url = f"https://www.sammobile.com/firmwares/search/{model_upper}/"
-=======
-    url = f"https://www.sammobile.com/samsung/firmware/{model_number.upper()}/"
->>>>>>> 6c04f6dd4d7dc2906c1942561a8a919a38fd180c
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125 Safari/537.36"}
     try:
         response = requests.get(url, timeout=18, headers=headers)
@@ -2255,7 +2251,6 @@ def fetch_samsung_korea_firmware(model_number):
         parser = TableParser()
         parser.feed(response.text)
 
-<<<<<<< HEAD
         # 검색 결과 표의 열 순서는 보통 Model, Country/Carrier, Build date, Version, PDA
         # (또는 PDA, Version 순서가 뒤바뀐 경우도 있어 아래에서 패턴으로 구분한다).
         candidates = []
@@ -2263,13 +2258,6 @@ def fetch_samsung_korea_firmware(model_number):
             clean = [re.sub(r"\s+", " ", c).strip() for c in cells]
             model_index = next((i for i, cell in enumerate(clean)
                                 if cell.upper() == model_upper), None)
-=======
-        # 상세 페이지의 열 순서는 보통 Model, Country/Carrier, Build date, PDA, Version이다.
-        for cells in parser.rows:
-            clean = [re.sub(r"\s+", " ", c).strip() for c in cells]
-            model_index = next((i for i, cell in enumerate(clean)
-                                if cell.upper() == model_number.upper()), None)
->>>>>>> 6c04f6dd4d7dc2906c1942561a8a919a38fd180c
             if model_index is None:
                 continue
             tail = clean[model_index:]
@@ -2278,10 +2266,6 @@ def fetch_samsung_korea_firmware(model_number):
             region = tail[1]
             if "korea" not in region.casefold():
                 continue
-<<<<<<< HEAD
-=======
-            # 일부 페이지의 표는 PDA/Version 순서, 일부 아카이브는 Version/PDA 순서다.
->>>>>>> 6c04f6dd4d7dc2906c1942561a8a919a38fd180c
             date = tail[2]
             fourth, fifth = tail[3], tail[4]
             if re.fullmatch(r"\d+(?:\.\d+)*", fourth) and re.search(r"[A-Z]", fifth, re.I):
@@ -2290,7 +2274,6 @@ def fetch_samsung_korea_firmware(model_number):
                 pda, version = fourth, fifth
             else:
                 pda, version = fourth, fifth
-<<<<<<< HEAD
             candidates.append({
                 "model": model_upper, "region": region, "date": date,
                 "version": version, "pda": pda, "url": url,
@@ -2307,15 +2290,6 @@ def fetch_samsung_korea_firmware(model_number):
 
         # 검색 결과에 Korea 행이 없으면, 공개 최신 목록(아카이브)에도 혹시
         # 해당 모델의 Korea 행이 있는지 한 번 더 확인한다.
-=======
-            return {
-                "model": model_number.upper(), "region": region, "date": date,
-                "version": version, "pda": pda, "url": url,
-            }, None
-
-        # 상세 페이지가 표를 제공하지 않는 경우, 공개 최신 목록에 해당 모델의
-        # Korea 행이 포함되어 있는지 한 번 더 확인한다.
->>>>>>> 6c04f6dd4d7dc2906c1942561a8a919a38fd180c
         for row in get_samsung_latest_rows():
             if row["model"].casefold() == model_number.casefold() and "korea" in row.get("region", "").casefold():
                 return row, None
