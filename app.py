@@ -2021,29 +2021,57 @@ def fetch_iphone_firmware(model_name):
         return None, f"온라인 조회에 실패했습니다: {exc}"
 
 
+@st.cache_data(ttl=3600, show_spinner=False)
+def get_iphone_device_options():
+    """IPSW.me 공개 API에서 선택 가능한 iPhone/iPad 모델 목록을 가져온다."""
+    fallback = [
+        "iPhone 17 Pro Max", "iPhone 17 Pro", "iPhone 17", "iPhone Air",
+        "iPhone 16 Pro Max", "iPhone 16 Pro", "iPhone 16 Plus", "iPhone 16",
+        "iPhone 15 Pro Max", "iPhone 15 Pro", "iPhone 15 Plus", "iPhone 15",
+        "iPhone 14 Pro Max", "iPhone 14 Pro", "iPhone 14 Plus", "iPhone 14",
+        "iPhone 13 Pro Max", "iPhone 13 Pro", "iPhone 13", "iPhone 13 mini",
+        "iPhone 12 Pro Max", "iPhone 12 Pro", "iPhone 12", "iPhone 12 mini",
+        "iPhone SE (3rd generation)", "iPad Pro 13-inch (M4)", "iPad Pro 11-inch (M4)",
+        "iPad Air 13-inch (M2)", "iPad Air 11-inch (M2)", "iPad mini (A17 Pro)",
+    ]
+    if not _OS_LOOKUP_LIVE_AVAILABLE:
+        return fallback
+    try:
+        resp = requests.get(f"{IPSW_API_BASE}/devices", timeout=12,
+                            headers={"User-Agent": "Mozilla/5.0"})
+        resp.raise_for_status()
+        devices = resp.json()
+        names = sorted({str(d.get("name", "")).strip() for d in devices
+                        if isinstance(d, dict) and d.get("name")
+                        and (str(d.get("name", "")).startswith("iPhone")
+                             or str(d.get("name", "")).startswith("iPad"))},
+                       key=lambda name: (name.split()[0], name.casefold()))
+        return names or fallback
+    except Exception:
+        return fallback
+
+
 def render_os_lookup_bar():
     """모델별 최신 OS 조회 UI. main()의 페이지 콘텐츠 뒤에서 호출해 맨 아래에 표시한다."""
     st.divider()
     st.subheader("📱 모델별 최신 OS 조회")
-    st.caption("최신 OS/펌웨어 확인을 위한 참고 기능입니다. 네트워크와 외부 사이트 상태에 따라 조회가 제한될 수 있습니다.")
+    st.caption("모델명을 직접 입력하지 않고 목록에서 선택합니다. 최신 정보는 외부 사이트 및 네트워크 상태에 따라 달라질 수 있습니다.")
 
     brand = st.radio("제조사", ["iPhone / iPad", "Samsung Galaxy"], horizontal=True, key="os_lookup_brand_bottom")
     if brand == "iPhone / iPad":
-        model_name = st.text_input("기기 모델명", placeholder="예: iPhone 16 Pro, iPhone 13, iPad Pro 11-inch (4th generation)", key="os_lookup_apple_model_bottom")
+        model_options = get_iphone_device_options()
+        model_name = st.selectbox("기기 모델 선택", model_options, key="os_lookup_apple_model_select_bottom")
         c1, c2 = st.columns([1, 1])
         with c1:
             if st.button("🔎 IPSW.me에서 최신 펌웨어 조회", key="os_lookup_apple_btn_bottom", use_container_width=True):
-                if not model_name.strip():
-                    st.warning("기기 모델명을 입력해 주세요.")
+                with st.spinner("IPSW.me의 공개 기기/펌웨어 정보를 확인하는 중..."):
+                    result, error = fetch_iphone_firmware(model_name)
+                if result:
+                    st.session_state["os_lookup_apple_result_bottom"] = result
+                    st.session_state.pop("os_lookup_apple_error_bottom", None)
                 else:
-                    with st.spinner("IPSW.me의 공개 기기/펌웨어 정보를 확인하는 중..."):
-                        result, error = fetch_iphone_firmware(model_name.strip())
-                    if result:
-                        st.session_state["os_lookup_apple_result_bottom"] = result
-                        st.session_state.pop("os_lookup_apple_error_bottom", None)
-                    else:
-                        st.session_state["os_lookup_apple_error_bottom"] = error
-                        st.session_state.pop("os_lookup_apple_result_bottom", None)
+                    st.session_state["os_lookup_apple_error_bottom"] = error
+                    st.session_state.pop("os_lookup_apple_result_bottom", None)
         with c2:
             st.link_button("IPSW.me 사이트 열기", IPSW_SITE, use_container_width=True)
         result = st.session_state.get("os_lookup_apple_result_bottom")
@@ -2060,13 +2088,35 @@ def render_os_lookup_bar():
             st.warning(st.session_state["os_lookup_apple_error_bottom"])
         st.caption("출처: IPSW.me 공개 API 및 펌웨어 목록. 복원 가능 여부는 서명 상태에 따라 달라질 수 있습니다.")
     else:
-        model_number = st.text_input("Samsung 모델 번호", placeholder="예: SM-S938N, SM-S928N, SM-A556N", key="os_lookup_samsung_model_bottom")
+        # SamMobile does not expose a dependable public model-list API here, so offer a curated dropdown.
+        samsung_models = {
+            "Galaxy S25 Ultra (SM-S938N)": "SM-S938N",
+            "Galaxy S25+ (SM-S936N)": "SM-S936N",
+            "Galaxy S25 (SM-S931N)": "SM-S931N",
+            "Galaxy S24 Ultra (SM-S928N)": "SM-S928N",
+            "Galaxy S24+ (SM-S926N)": "SM-S926N",
+            "Galaxy S24 (SM-S921N)": "SM-S921N",
+            "Galaxy S23 Ultra (SM-S918N)": "SM-S918N",
+            "Galaxy S23+ (SM-S916N)": "SM-S916N",
+            "Galaxy S23 (SM-S911N)": "SM-S911N",
+            "Galaxy Z Fold7 (SM-F966N)": "SM-F966N",
+            "Galaxy Z Flip7 (SM-F766N)": "SM-F766N",
+            "Galaxy Z Fold6 (SM-F956N)": "SM-F956N",
+            "Galaxy Z Flip6 (SM-F741N)": "SM-F741N",
+            "Galaxy A56 5G (SM-A566N)": "SM-A566N",
+            "Galaxy A55 5G (SM-A556N)": "SM-A556N",
+            "Galaxy A36 5G (SM-A366N)": "SM-A366N",
+            "Galaxy A35 5G (SM-A356N)": "SM-A356N",
+            "기타 모델 (SamMobile에서 직접 검색)": "",
+        }
+        selected_model = st.selectbox("기기 모델 선택", list(samsung_models.keys()), key="os_lookup_samsung_model_select_bottom")
+        model_number = samsung_models[selected_model]
         country = st.selectbox("지역 / CSC 참고", ["Korea (KOO)", "Korea (SKC)", "Korea (KTC)", "Korea (LUC)", "기타 / 직접 확인"], key="os_lookup_samsung_csc_bottom")
-        st.info("SamMobile은 모델 번호와 국가/통신사(CSC)에 따라 펌웨어가 다르게 표시될 수 있습니다. 앱에서 임의로 버전을 추정하지 않고, 해당 사이트의 최신 펌웨어 목록을 확인하도록 연결합니다.")
-        if model_number.strip():
+        st.info("SamMobile은 모델 번호와 국가/통신사(CSC)에 따라 펌웨어가 다를 수 있습니다. 선택한 모델의 펌웨어 목록을 사이트에서 확인해 주세요.")
+        if model_number:
             from urllib.parse import quote
-            search_url = SAMMOBILE_SITE + "?model=" + quote(model_number.strip(), safe="")
-            st.link_button("🔎 SamMobile에서 해당 모델 펌웨어 확인", search_url, use_container_width=True)
+            search_url = SAMMOBILE_SITE + "?model=" + quote(model_number, safe="")
+            st.link_button(f"🔎 SamMobile에서 {model_number} 펌웨어 확인", search_url, use_container_width=True)
         else:
             st.link_button("SamMobile 펌웨어 검색 열기", SAMMOBILE_SITE, use_container_width=True)
         st.caption(f"선택한 지역 참고값: {country}. 실제 펌웨어는 SamMobile에서 모델 번호 및 CSC를 대조해 확인해 주세요.")
