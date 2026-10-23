@@ -2163,6 +2163,90 @@ def get_samsung_latest_firmware(model_number):
     return None
 
 
+@st.cache_data(ttl=1800, show_spinner=False)
+def fetch_samsung_korea_firmware(model_number):
+    """선택한 삼성 모델의 SamMobile 상세 목록에서 첫 번째 Korea 행을 반환한다.
+
+    페이지에 표시되는 순서를 유지하여 Korea 항목 중 맨 위의 펌웨어를 선택한다.
+    지역/통신사 입력은 요구하지 않는다.
+    """
+    if not _OS_LOOKUP_LIVE_AVAILABLE:
+        return None, "requests 모듈이 설치되어 있지 않아 온라인 조회를 할 수 없습니다."
+
+    from html.parser import HTMLParser
+    import re
+
+    class TableParser(HTMLParser):
+        def __init__(self):
+            super().__init__()
+            self.rows = []
+            self.row = None
+            self.cell = None
+
+        def handle_starttag(self, tag, attrs):
+            if tag == "tr":
+                self.row = []
+            elif tag in ("td", "th") and self.row is not None:
+                self.cell = []
+
+        def handle_data(self, data):
+            if self.cell is not None:
+                self.cell.append(data)
+
+        def handle_endtag(self, tag):
+            if tag in ("td", "th") and self.cell is not None and self.row is not None:
+                self.row.append(" ".join(" ".join(self.cell).split()))
+                self.cell = None
+            elif tag == "tr" and self.row is not None:
+                if self.row:
+                    self.rows.append(self.row)
+                self.row = None
+
+    url = f"https://www.sammobile.com/samsung/firmware/{model_number.upper()}/"
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125 Safari/537.36"}
+    try:
+        response = requests.get(url, timeout=18, headers=headers)
+        response.raise_for_status()
+        parser = TableParser()
+        parser.feed(response.text)
+
+        # 상세 페이지의 열 순서는 보통 Model, Country/Carrier, Build date, PDA, Version이다.
+        for cells in parser.rows:
+            clean = [re.sub(r"\s+", " ", c).strip() for c in cells]
+            model_index = next((i for i, cell in enumerate(clean)
+                                if cell.upper() == model_number.upper()), None)
+            if model_index is None:
+                continue
+            tail = clean[model_index:]
+            if len(tail) < 5:
+                continue
+            region = tail[1]
+            if "korea" not in region.casefold():
+                continue
+            # 일부 페이지의 표는 PDA/Version 순서, 일부 아카이브는 Version/PDA 순서다.
+            date = tail[2]
+            fourth, fifth = tail[3], tail[4]
+            if re.fullmatch(r"\d+(?:\.\d+)*", fourth) and re.search(r"[A-Z]", fifth, re.I):
+                version, pda = fourth, fifth
+            elif re.fullmatch(r"\d+(?:\.\d+)*", fifth) and re.search(r"[A-Z]", fourth, re.I):
+                pda, version = fourth, fifth
+            else:
+                pda, version = fourth, fifth
+            return {
+                "model": model_number.upper(), "region": region, "date": date,
+                "version": version, "pda": pda, "url": url,
+            }, None
+
+        # 상세 페이지가 표를 제공하지 않는 경우, 공개 최신 목록에 해당 모델의
+        # Korea 행이 포함되어 있는지 한 번 더 확인한다.
+        for row in get_samsung_latest_rows():
+            if row["model"].casefold() == model_number.casefold() and "korea" in row.get("region", "").casefold():
+                return row, None
+        return None, f"{model_number} 모델의 Korea 펌웨어 정보를 찾지 못했습니다. 해당 모델의 국내 펌웨어가 공개 목록에 없을 수 있습니다."
+    except Exception as exc:
+        return None, f"SamMobile에서 국내 펌웨어를 가져오지 못했습니다. 네트워크 연결 또는 사이트 응답을 확인해 주세요. ({exc})"
+
+
 def render_os_lookup_bar():
     """모델별 최신 OS 조회 UI. main()의 페이지 콘텐츠 뒤에서 호출해 맨 아래에 표시한다."""
     st.divider()
@@ -2209,22 +2293,31 @@ def render_os_lookup_bar():
             key="os_lookup_samsung_model_select_bottom",
         )
         model_number = samsung_models[selected_label]
-        samsung_result = get_samsung_latest_firmware(model_number)
+        st.caption("선택한 모델의 SamMobile 펌웨어 목록에서 Korea 항목 중 맨 위에 표시된 버전을 가져옵니다.")
+        if st.button("🇰🇷 국내 최신 펌웨어 조회", key="os_lookup_samsung_btn_bottom", use_container_width=True):
+            with st.spinner(f"{model_number} 모델의 Korea 펌웨어를 확인하는 중..."):
+                result, error = fetch_samsung_korea_firmware(model_number)
+            if result:
+                st.session_state["os_lookup_samsung_result_bottom"] = {"model": model_number, **result}
+                st.session_state.pop("os_lookup_samsung_error_bottom", None)
+            else:
+                st.session_state.pop("os_lookup_samsung_result_bottom", None)
+                st.session_state["os_lookup_samsung_error_bottom"] = error
 
-        if samsung_result:
+        samsung_result = st.session_state.get("os_lookup_samsung_result_bottom")
+        if samsung_result and samsung_result.get("model", "").casefold() == model_number.casefold():
             st.markdown(f"**기기 모델:** {selected_label} (`{model_number}`)")
             st.markdown(
-                f"**최신 확인 OS:** Android {samsung_result.get('version', '정보 없음')}  ·  "
+                f"**국내 최신 확인 OS:** Android {samsung_result.get('version', '정보 없음')}  ·  "
                 f"**빌드 번호(PDA):** {samsung_result.get('pda', '정보 없음')}  ·  "
                 f"**빌드 날짜:** {samsung_result.get('date', '정보 없음')}"
             )
-            st.caption(f"SamMobile 목록의 지역/통신사: {samsung_result.get('region', '정보 없음')}")
-            st.link_button("SamMobile에서 해당 모델 펌웨어 상세 보기", samsung_result.get("url") or SAMMOBILE_SITE)
-        else:
-            st.info("선택한 모델의 최신 버전을 자동으로 찾지 못했습니다. 아래 버튼에서 모델별 펌웨어 목록을 확인해 주세요.")
-            st.link_button("SamMobile에서 해당 모델 펌웨어 확인", SAMMOBILE_SITE + "?model=" + model_number)
+            st.success(f"국가/통신사: {samsung_result.get('region', 'Korea')}")
+            st.caption(f"조회 출처: SamMobile · {samsung_result.get('url', '')}")
+        if st.session_state.get("os_lookup_samsung_error_bottom"):
+            st.warning(st.session_state["os_lookup_samsung_error_bottom"])
 
-        st.caption("지역/CSC를 입력하거나 선택할 필요 없이, SamMobile 최신 공개 목록에서 확인 가능한 해당 모델의 최신 펌웨어 정보를 표시합니다. 지역별 최신 버전은 다를 수 있습니다.")
+        st.caption("조회 버튼을 누르면 국내(Korea) 펌웨어 목록의 첫 번째 항목을 앱 안에 표시합니다. 통신사별 최신 빌드가 다를 수 있으므로, 수사 기록에는 실제 기기 설정의 OS 버전·빌드 번호·CSC도 함께 기록해 주세요.")
 
     st.caption("주의: 이 기능은 참고용이며 수사·포렌식 판단 시 기기 설정의 실제 OS 빌드, 모델 번호, CSC 및 제조사 자료를 함께 기록해 주세요.")
 
