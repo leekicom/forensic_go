@@ -2051,6 +2051,118 @@ def get_iphone_device_options():
         return fallback
 
 
+@st.cache_data(ttl=3600, show_spinner=False)
+def get_samsung_latest_rows():
+    """SamMobile의 최신 펌웨어 아카이브에서 공개된 모델별 행을 가져온다."""
+    if not _OS_LOOKUP_LIVE_AVAILABLE:
+        return []
+    try:
+        from html.parser import HTMLParser
+
+        class TableParser(HTMLParser):
+            def __init__(self):
+                super().__init__()
+                self.rows = []
+                self.row = None
+                self.cell = None
+            def handle_starttag(self, tag, attrs):
+                if tag == "tr":
+                    self.row = []
+                elif tag in ("td", "th") and self.row is not None:
+                    self.cell = []
+            def handle_data(self, data):
+                if self.cell is not None:
+                    self.cell.append(data)
+            def handle_endtag(self, tag):
+                if tag in ("td", "th") and self.cell is not None and self.row is not None:
+                    self.row.append(" ".join(" ".join(self.cell).split()))
+                    self.cell = None
+                elif tag == "tr" and self.row is not None:
+                    if self.row:
+                        self.rows.append(self.row)
+                    self.row = None
+
+        response = requests.get(
+            "https://www.sammobile.com/firmwares/archive/", timeout=15,
+            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125 Safari/537.36"},
+        )
+        response.raise_for_status()
+        parser = TableParser()
+        parser.feed(response.text)
+        results = []
+        for cells in parser.rows:
+            if len(cells) < 5:
+                continue
+            model = next((c.strip() for c in cells if __import__('re').fullmatch(r"SM-[A-Z0-9]+", c.strip(), __import__('re').I)), None)
+            if not model:
+                continue
+            # SamMobile archive columns: Model, Country/Carrier, Build date, Version, PDA
+            idx = next(i for i, c in enumerate(cells) if c.strip().upper() == model.upper())
+            tail = cells[idx:]
+            if len(tail) < 5:
+                continue
+            results.append({"model": model.upper(), "region": tail[1], "date": tail[2],
+                            "version": tail[3], "pda": tail[4],
+                            "url": "https://www.sammobile.com/firmwares/?model=" + model})
+        # Keep newest row per model; archive is normally ordered newest first.
+        unique = {}
+        for item in results:
+            unique.setdefault(item["model"], item)
+        return list(unique.values())
+    except Exception:
+        return []
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def get_samsung_model_options():
+    """SamMobile에서 발견한 모델과 다양한 세대의 대표 모델을 함께 제공한다."""
+    # 표기명은 사용자 선택을 돕기 위한 설명이며, 괄호 안은 모델번호다.
+    catalog = {
+        # Galaxy S flagship
+        "Galaxy S26 Ultra (SM-S948N)":"SM-S948N", "Galaxy S26+ (SM-S947N)":"SM-S947N", "Galaxy S26 (SM-S942N)":"SM-S942N",
+        "Galaxy S25 Ultra (SM-S938N)":"SM-S938N", "Galaxy S25+ (SM-S936N)":"SM-S936N", "Galaxy S25 (SM-S931N)":"SM-S931N", "Galaxy S25 Edge (SM-S937N)":"SM-S937N", "Galaxy S25 FE (SM-S731N)":"SM-S731N",
+        "Galaxy S24 Ultra (SM-S928N)":"SM-S928N", "Galaxy S24+ (SM-S926N)":"SM-S926N", "Galaxy S24 (SM-S921N)":"SM-S921N", "Galaxy S24 FE (SM-S721N)":"SM-S721N",
+        "Galaxy S23 Ultra (SM-S918N)":"SM-S918N", "Galaxy S23+ (SM-S916N)":"SM-S916N", "Galaxy S23 (SM-S911N)":"SM-S911N", "Galaxy S23 FE (SM-S711N)":"SM-S711N",
+        "Galaxy S22 Ultra (SM-S908N)":"SM-S908N", "Galaxy S22+ (SM-S906N)":"SM-S906N", "Galaxy S22 (SM-S901N)":"SM-S901N",
+        "Galaxy S21 Ultra (SM-G998N)":"SM-G998N", "Galaxy S21+ (SM-G996N)":"SM-G996N", "Galaxy S21 (SM-G991N)":"SM-G991N", "Galaxy S21 FE (SM-G990N)":"SM-G990N",
+        "Galaxy S20 Ultra (SM-G988N)":"SM-G988N", "Galaxy S20+ (SM-G986N)":"SM-G986N", "Galaxy S20 (SM-G981N)":"SM-G981N", "Galaxy S20 FE (SM-G781N)":"SM-G781N",
+        "Galaxy S10+ (SM-G975N)":"SM-G975N", "Galaxy S10 (SM-G973N)":"SM-G973N", "Galaxy S10e (SM-G970N)":"SM-G970N", "Galaxy S10 5G (SM-G977N)":"SM-G977N",
+        "Galaxy S9+ (SM-G965N)":"SM-G965N", "Galaxy S9 (SM-G960N)":"SM-G960N", "Galaxy S8+ (SM-G955N)":"SM-G955N", "Galaxy S8 (SM-G950N)":"SM-G950N",
+        # Fold / Flip
+        "Galaxy Z Fold7 (SM-F966N)":"SM-F966N", "Galaxy Z Flip7 (SM-F766N)":"SM-F766N", "Galaxy Z Fold6 (SM-F956N)":"SM-F956N", "Galaxy Z Flip6 (SM-F741N)":"SM-F741N",
+        "Galaxy Z Fold5 (SM-F946N)":"SM-F946N", "Galaxy Z Flip5 (SM-F731N)":"SM-F731N", "Galaxy Z Fold4 (SM-F936N)":"SM-F936N", "Galaxy Z Flip4 (SM-F721N)":"SM-F721N",
+        "Galaxy Z Fold3 (SM-F926N)":"SM-F926N", "Galaxy Z Flip3 (SM-F711N)":"SM-F711N", "Galaxy Fold 2 (SM-F916N)":"SM-F916N", "Galaxy Fold (SM-F907N)":"SM-F907N",
+        # Galaxy A midrange
+        "Galaxy A56 5G (SM-A566N)":"SM-A566N", "Galaxy A55 5G (SM-A556N)":"SM-A556N", "Galaxy A54 5G (SM-A546N)":"SM-A546N", "Galaxy A53 5G (SM-A536N)":"SM-A536N",
+        "Galaxy A52s 5G (SM-A528N)":"SM-A528N", "Galaxy A52 5G (SM-A526N)":"SM-A526N", "Galaxy A51 (SM-A515N)":"SM-A515N", "Galaxy A50 (SM-A505N)":"SM-A505N",
+        "Galaxy A36 5G (SM-A366N)":"SM-A366N", "Galaxy A35 5G (SM-A356N)":"SM-A356N", "Galaxy A34 5G (SM-A346N)":"SM-A346N", "Galaxy A33 5G (SM-A336N)":"SM-A336N",
+        "Galaxy A32 (SM-A325N)":"SM-A325N", "Galaxy A25 5G (SM-A256N)":"SM-A256N", "Galaxy A24 (SM-A245N)":"SM-A245N", "Galaxy A23 5G (SM-A236N)":"SM-A236N",
+        "Galaxy A22 (SM-A225N)":"SM-A225N", "Galaxy A21s (SM-A217N)":"SM-A217N", "Galaxy A15 5G (SM-A156N)":"SM-A156N", "Galaxy A14 5G (SM-A146N)":"SM-A146N",
+        "Galaxy A13 (SM-A135N)":"SM-A135N", "Galaxy A12 (SM-A125N)":"SM-A125N", "Galaxy A06 (SM-A065N)":"SM-A065N", "Galaxy A05s (SM-A057N)":"SM-A057N",
+        # Note / tablets
+        "Galaxy Note20 Ultra (SM-N986N)":"SM-N986N", "Galaxy Note20 (SM-N981N)":"SM-N981N", "Galaxy Note10+ (SM-N976N)":"SM-N976N", "Galaxy Note10 (SM-N971N)":"SM-N971N", "Galaxy Note9 (SM-N960N)":"SM-N960N", "Galaxy Note8 (SM-N950N)":"SM-N950N",
+        "Galaxy Tab S10 Ultra (SM-X920)":"SM-X920", "Galaxy Tab S10+ (SM-X820)":"SM-X820", "Galaxy Tab S9 Ultra (SM-X910)":"SM-X910", "Galaxy Tab S9+ (SM-X810)":"SM-X810", "Galaxy Tab S9 (SM-X710)":"SM-X710",
+        "Galaxy Tab S8 Ultra (SM-X900)":"SM-X900", "Galaxy Tab S8+ (SM-X800)":"SM-X800", "Galaxy Tab S8 (SM-X700)":"SM-X700", "Galaxy Tab S7+ (SM-T970)":"SM-T970", "Galaxy Tab S7 (SM-T870)":"SM-T870",
+        "Galaxy Tab A9+ (SM-X210)":"SM-X210", "Galaxy Tab A9 (SM-X110)":"SM-X110", "Galaxy Tab A8 (SM-X200)":"SM-X200", "Galaxy Tab A7 (SM-T500)":"SM-T500",
+    }
+    known_model_numbers = set(catalog.values())
+    for item in get_samsung_latest_rows():
+        model = item["model"]
+        if model not in known_model_numbers:
+            catalog[f"Samsung 기기 {model}"] = model
+            known_model_numbers.add(model)
+    return dict(sorted(catalog.items(), key=lambda kv: (kv[0].split("(")[0].casefold(), kv[0].casefold())))
+
+
+@st.cache_data(ttl=1800, show_spinner=False)
+def get_samsung_latest_firmware(model_number):
+    """SamMobile 최신 펌웨어 목록에서 선택 모델의 가장 최근 공개 행을 반환한다."""
+    for row in get_samsung_latest_rows():
+        if row["model"].casefold() == model_number.casefold():
+            return row
+    return None
+
+
 def render_os_lookup_bar():
     """모델별 최신 OS 조회 UI. main()의 페이지 콘텐츠 뒤에서 호출해 맨 아래에 표시한다."""
     st.divider()
@@ -2088,38 +2200,31 @@ def render_os_lookup_bar():
             st.warning(st.session_state["os_lookup_apple_error_bottom"])
         st.caption("출처: IPSW.me 공개 API 및 펌웨어 목록. 복원 가능 여부는 서명 상태에 따라 달라질 수 있습니다.")
     else:
-        # SamMobile does not expose a dependable public model-list API here, so offer a curated dropdown.
-        samsung_models = {
-            "Galaxy S25 Ultra (SM-S938N)": "SM-S938N",
-            "Galaxy S25+ (SM-S936N)": "SM-S936N",
-            "Galaxy S25 (SM-S931N)": "SM-S931N",
-            "Galaxy S24 Ultra (SM-S928N)": "SM-S928N",
-            "Galaxy S24+ (SM-S926N)": "SM-S926N",
-            "Galaxy S24 (SM-S921N)": "SM-S921N",
-            "Galaxy S23 Ultra (SM-S918N)": "SM-S918N",
-            "Galaxy S23+ (SM-S916N)": "SM-S916N",
-            "Galaxy S23 (SM-S911N)": "SM-S911N",
-            "Galaxy Z Fold7 (SM-F966N)": "SM-F966N",
-            "Galaxy Z Flip7 (SM-F766N)": "SM-F766N",
-            "Galaxy Z Fold6 (SM-F956N)": "SM-F956N",
-            "Galaxy Z Flip6 (SM-F741N)": "SM-F741N",
-            "Galaxy A56 5G (SM-A566N)": "SM-A566N",
-            "Galaxy A55 5G (SM-A556N)": "SM-A556N",
-            "Galaxy A36 5G (SM-A366N)": "SM-A366N",
-            "Galaxy A35 5G (SM-A356N)": "SM-A356N",
-            "기타 모델 (SamMobile에서 직접 검색)": "",
-        }
-        selected_model = st.selectbox("기기 모델 선택", list(samsung_models.keys()), key="os_lookup_samsung_model_select_bottom")
-        model_number = samsung_models[selected_model]
-        country = st.selectbox("지역 / CSC 참고", ["Korea (KOO)", "Korea (SKC)", "Korea (KTC)", "Korea (LUC)", "기타 / 직접 확인"], key="os_lookup_samsung_csc_bottom")
-        st.info("SamMobile은 모델 번호와 국가/통신사(CSC)에 따라 펌웨어가 다를 수 있습니다. 선택한 모델의 펌웨어 목록을 사이트에서 확인해 주세요.")
-        if model_number:
-            from urllib.parse import quote
-            search_url = SAMMOBILE_SITE + "?model=" + quote(model_number, safe="")
-            st.link_button(f"🔎 SamMobile에서 {model_number} 펌웨어 확인", search_url, use_container_width=True)
+        # SamMobile 최신 펌웨어 목록을 읽어 모델을 자동으로 확장하고,
+        # 내장 목록은 오래된 기기/국내 모델의 선택지를 보완한다.
+        samsung_models = get_samsung_model_options()
+        selected_label = st.selectbox(
+            "기기 모델 선택 (모델명 또는 모델번호)",
+            list(samsung_models.keys()),
+            key="os_lookup_samsung_model_select_bottom",
+        )
+        model_number = samsung_models[selected_label]
+        samsung_result = get_samsung_latest_firmware(model_number)
+
+        if samsung_result:
+            st.markdown(f"**기기 모델:** {selected_label} (`{model_number}`)")
+            st.markdown(
+                f"**최신 확인 OS:** Android {samsung_result.get('version', '정보 없음')}  ·  "
+                f"**빌드 번호(PDA):** {samsung_result.get('pda', '정보 없음')}  ·  "
+                f"**빌드 날짜:** {samsung_result.get('date', '정보 없음')}"
+            )
+            st.caption(f"SamMobile 목록의 지역/통신사: {samsung_result.get('region', '정보 없음')}")
+            st.link_button("SamMobile에서 해당 모델 펌웨어 상세 보기", samsung_result.get("url") or SAMMOBILE_SITE)
         else:
-            st.link_button("SamMobile 펌웨어 검색 열기", SAMMOBILE_SITE, use_container_width=True)
-        st.caption(f"선택한 지역 참고값: {country}. 실제 펌웨어는 SamMobile에서 모델 번호 및 CSC를 대조해 확인해 주세요.")
+            st.info("선택한 모델의 최신 버전을 자동으로 찾지 못했습니다. 아래 버튼에서 모델별 펌웨어 목록을 확인해 주세요.")
+            st.link_button("SamMobile에서 해당 모델 펌웨어 확인", SAMMOBILE_SITE + "?model=" + model_number)
+
+        st.caption("지역/CSC를 입력하거나 선택할 필요 없이, SamMobile 최신 공개 목록에서 확인 가능한 해당 모델의 최신 펌웨어 정보를 표시합니다. 지역별 최신 버전은 다를 수 있습니다.")
 
     st.caption("주의: 이 기능은 참고용이며 수사·포렌식 판단 시 기기 설정의 실제 OS 빌드, 모델 번호, CSC 및 제조사 자료를 함께 기록해 주세요.")
 
