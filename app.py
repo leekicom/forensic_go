@@ -1402,6 +1402,15 @@ def render_start():
                     use_container_width=True,
                 )
 
+    st.markdown("<div style='height: 0.6rem;'></div>", unsafe_allow_html=True)
+    lcol1, lcol2, lcol3 = st.columns([2, 1, 2])
+    with lcol2:
+        st.link_button(
+            "📱 휴대폰 OS별 버전정보",
+            "https://forensicgo1.streamlit.app/",
+            use_container_width=True,
+        )
+
 
 def _pdf_styles(font_name):
     styles = getSampleStyleSheet()
